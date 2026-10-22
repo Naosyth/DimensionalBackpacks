@@ -3,6 +3,7 @@
   "block.dimensional_backpacks.example_block": "Example Block",
   "block.dimensional_backpacks.plot_wall": "Backpack Wall",
   "block.dimensional_backpacks.backpack_exit": "Backpack Exit",
+  "item.dimensional_backpacks.hotspot": "Hotspot",
   "block.dimensional_backpacks.hotspot": "Hotspot",
   "key.categories.dimensional_backpacks": "Dimensional Backpacks",
   "key.dimensional_backpacks.hotspot": "Use Hotspot (tap: primary, hold: choose)",
