@@ -17,10 +17,8 @@ object ModBlocks {
 
     val BACKPACK_EXIT = REGISTRY.register("backpack_exit", Supplier { ExitBlock(unbreakable()) })
 
-    val HOTSPOT = REGISTRY.register(
-        "hotspot",
-        Supplier { HotspotBlock(BlockBehaviour.Properties.of().strength(1.5f).sound(SoundType.AMETHYST)) }
-    )
+    // Hotspots live in the wall and are only ever removed through the hotspot's own logic.
+    val HOTSPOT = REGISTRY.register("hotspot", Supplier { HotspotBlock(unbreakable()) })
 
     private fun backpackProperties() = BlockBehaviour.Properties.of()
         .strength(2.0f)
