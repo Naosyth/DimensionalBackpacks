@@ -23,7 +23,8 @@ object BackpackRendering {
         poseStack.pushPose()
         // Body space has +y pointing down and +z pointing at the wearer's back.
         model.body.translateAndRotate(poseStack)
-        poseStack.translate(0.0, 0.3, 0.38)
+        // The tier 1 model sits at the back of its block, so the offset also cancels that 5.5/16 shift.
+        poseStack.translate(0.0, 0.3, 0.62)
         poseStack.scale(1f, -1f, -1f)
         Minecraft.getInstance().itemRenderer.renderStatic(
             stack, ItemDisplayContext.FIXED, light, OverlayTexture.NO_OVERLAY, poseStack, buffer, entity.level(), entity.id
