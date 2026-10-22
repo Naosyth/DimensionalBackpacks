@@ -8,7 +8,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.ItemInteractionResult
-import net.minecraft.world.entity.EquipmentSlot
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.item.WornBackpack
 import net.minecraft.world.item.ItemStack
 import net.neoforged.neoforge.network.PacketDistributor
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.network.HotspotMenuPayload
@@ -21,7 +21,7 @@ object HotspotUse {
     const val PRIMARY = -1
 
     private fun wornPlot(player: ServerPlayer): Plot? {
-        val worn = player.getItemBySlot(EquipmentSlot.CHEST)
+        val worn = WornBackpack.find(player)
         if (worn.item !is BackpackItem) return notify(player, "You aren't wearing a backpack")
         val pocket = PlotManager.getPocketLevel(player.server) ?: return null
         return worn.get(ModComponents.PLOT_ID.get())?.let { PlotManager.get(pocket).get(it) }

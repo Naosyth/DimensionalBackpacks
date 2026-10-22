@@ -16,6 +16,11 @@ repositories {
         url = 'https://thedarkcolour.github.io/KotlinForForge/'
         content { includeGroup "thedarkcolour" }
     }
+    maven {
+        name = 'Curios'
+        url = 'https://maven.theillusivec4.top/'
+        content { includeGroup "top.theillusivec4.curios" }
+    }
 }
 
 base {
@@ -104,6 +109,10 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 dependencies {
     implementation 'thedarkcolour:kotlinforforge-neoforge:5.3.0'
+
+    // Curios is optional at runtime; it is only on the dev run classpath for testing.
+    compileOnly "top.theillusivec4.curios:curios-neoforge:9.5.1+1.21.1"
+    runtimeOnly "top.theillusivec4.curios:curios-neoforge:9.5.1+1.21.1"
 
     // Example mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime

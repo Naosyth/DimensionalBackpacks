@@ -6,6 +6,14 @@ import com.naosyth.dimensionalbackpacks.dimensional_backpacks.network.HotspotMen
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.network.HotspotUsePayload
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.HotspotUse
 import net.minecraft.client.KeyMapping
+import net.minecraft.client.player.AbstractClientPlayer
+import net.minecraft.client.renderer.entity.player.PlayerRenderer
+import net.minecraft.client.resources.PlayerSkin
+import net.neoforged.neoforge.client.event.EntityRenderersEvent
+import net.neoforged.fml.ModList
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent
+import top.theillusivec4.curios.api.client.CuriosRendererRegistry
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.item.ModItems
 import net.minecraft.client.Minecraft
 import net.neoforged.neoforge.client.event.ClientTickEvent
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent
@@ -31,7 +39,25 @@ object ClientInit {
 
     fun init() {
         MOD_BUS.addListener<RegisterKeyMappingsEvent> { it.register(hotspotKey) }
+        MOD_BUS.addListener<EntityRenderersEvent.AddLayers> { event ->
+            for (skin in listOf(PlayerSkin.Model.WIDE, PlayerSkin.Model.SLIM)) {
+                val renderer = event.getSkin(skin) as? PlayerRenderer ?: continue
+                renderer.addLayer(BackpackLayer(renderer))
+            }
+        }
+        if (ModList.get().isLoaded("curios")) {
+            MOD_BUS.addListener<FMLClientSetupEvent> {
+                it.enqueueWork { registerCuriosRenderers() }
+            }
+        }
         NeoForge.EVENT_BUS.addListener<ClientTickEvent.Post> { tick() }
+    }
+
+    // Kept in its own function so Curios classes are only resolved when Curios is present.
+    private fun registerCuriosRenderers() {
+        for (item in listOf(ModItems.BACKPACK_TIER_1, ModItems.BACKPACK_TIER_2, ModItems.BACKPACK_TIER_3)) {
+            CuriosRendererRegistry.register(item.get()) { CuriosBackpackRenderer() }
+        }
     }
 
     private fun tick() {
