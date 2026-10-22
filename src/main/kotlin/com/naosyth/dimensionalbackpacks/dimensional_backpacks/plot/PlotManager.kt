@@ -1,6 +1,7 @@
 package com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot
 
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.DimensionalBackpacks
+import net.minecraft.core.BlockPos
 import net.minecraft.core.HolderLookup
 import net.minecraft.core.registries.Registries
 import net.minecraft.nbt.CompoundTag
@@ -20,6 +21,36 @@ class PlotManager : SavedData() {
 
     fun get(id: Int): Plot? = plots[id]
 
+    /** Finds the plot containing [pos], or null if it is outside every plot. */
+    fun plotAt(pos: BlockPos): Plot? {
+        if (pos.x < 0 || pos.z < 0) return null
+        val cellX = pos.x / CELL_SIZE
+        if (cellX >= CELLS_PER_ROW) return null
+        val cell = (pos.z / CELL_SIZE) * CELLS_PER_ROW + cellX
+        // Cell index equals id - 1.
+        return plots[cell + 1]?.takeIf { it.contains(pos) }
+    }
+
+    fun hasFreeHotspotSlot(plot: Plot): Boolean = (0 until plot.tier.maxHotspots).any { it !in plot.hotspots }
+
+    /** Registers a hotspot in the lowest free slot, or returns null if the tier's limit is reached. */
+    fun addHotspot(plot: Plot, pos: BlockPos): Int? {
+        val slot = (0 until plot.tier.maxHotspots).firstOrNull { it !in plot.hotspots } ?: return null
+        plot.hotspots[slot] = pos.immutable()
+        setDirty()
+        return slot
+    }
+
+    fun setPrimary(plot: Plot, pos: BlockPos) {
+        val slot = plot.hotspots.entries.firstOrNull { it.value == pos }?.key ?: return
+        plot.primary = slot
+        setDirty()
+    }
+
+    fun removeHotspot(plot: Plot, pos: BlockPos) {
+        if (plot.hotspots.values.removeIf { it == pos }) setDirty()
+    }
+
     /** Allocates a new plot in the next free grid cell. Cell index equals id - 1, so cells are never reused. */
     fun create(tier: Tier): Plot {
         val id = nextId++
@@ -36,6 +67,15 @@ class PlotManager : SavedData() {
             entry.putInt("id", plot.id)
             entry.putInt("cell", plot.cell)
             entry.putInt("tier", plot.tier.ordinal)
+            entry.putInt("primary", plot.primary)
+            val hotspots = ListTag()
+            for ((slot, pos) in plot.hotspots) {
+                val hotspot = CompoundTag()
+                hotspot.putInt("slot", slot)
+                hotspot.putLong("pos", pos.asLong())
+                hotspots.add(hotspot)
+            }
+            entry.put("hotspots", hotspots)
             list.add(entry)
         }
         tag.put("plots", list)
@@ -61,6 +101,12 @@ class PlotManager : SavedData() {
             for (i in 0 until list.size) {
                 val entry = list.getCompound(i)
                 val plot = Plot(entry.getInt("id"), entry.getInt("cell"), Tier.fromOrdinal(entry.getInt("tier")))
+                plot.primary = if (entry.contains("primary")) entry.getInt("primary") else -1
+                val hotspots = entry.getList("hotspots", Tag.TAG_COMPOUND.toInt())
+                for (j in 0 until hotspots.size) {
+                    val hotspot = hotspots.getCompound(j)
+                    plot.hotspots[hotspot.getInt("slot")] = BlockPos.of(hotspot.getLong("pos"))
+                }
                 manager.plots[plot.id] = plot
             }
             return manager

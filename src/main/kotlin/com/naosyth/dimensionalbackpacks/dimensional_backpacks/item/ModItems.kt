@@ -12,6 +12,7 @@ object ModItems {
 
     val PLOT_WALL = REGISTRY.registerSimpleBlockItem("plot_wall", ModBlocks.PLOT_WALL)
     val BACKPACK_EXIT = REGISTRY.registerSimpleBlockItem("backpack_exit", ModBlocks.BACKPACK_EXIT)
+    val HOTSPOT = REGISTRY.registerSimpleBlockItem("hotspot", ModBlocks.HOTSPOT)
 
     private fun backpack(name: String, block: Supplier<BackpackBlock>) =
         REGISTRY.register(name, Supplier { BackpackItem(block.get(), Item.Properties().stacksTo(1)) })

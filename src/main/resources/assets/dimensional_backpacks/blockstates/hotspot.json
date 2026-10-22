@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "facing=down": { "model": "dimensional_backpacks:block/hotspot_vertical", "x": 180 },
+    "facing=up": { "model": "dimensional_backpacks:block/hotspot_vertical" },
+    "facing=north": { "model": "dimensional_backpacks:block/hotspot" },
+    "facing=east": { "model": "dimensional_backpacks:block/hotspot", "y": 90 },
+    "facing=south": { "model": "dimensional_backpacks:block/hotspot", "y": 180 },
+    "facing=west": { "model": "dimensional_backpacks:block/hotspot", "y": 270 }
+  }
+}

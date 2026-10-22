@@ -17,6 +17,11 @@ object ModBlocks {
 
     val BACKPACK_EXIT = REGISTRY.register("backpack_exit", Supplier { ExitBlock(unbreakable()) })
 
+    val HOTSPOT = REGISTRY.register(
+        "hotspot",
+        Supplier { HotspotBlock(BlockBehaviour.Properties.of().strength(1.5f).sound(SoundType.AMETHYST)) }
+    )
+
     private fun backpackProperties() = BlockBehaviour.Properties.of()
         .strength(2.0f)
         .sound(SoundType.WOOL)

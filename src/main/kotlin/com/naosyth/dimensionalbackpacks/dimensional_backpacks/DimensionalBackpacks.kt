@@ -7,6 +7,13 @@ import net.minecraft.world.item.CreativeModeTabs
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.command.DebugCommands
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.item.ModItems
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.network.ModNetwork
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.client.ClientInit
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.HotspotSessions
+import net.neoforged.api.distmarker.Dist
+import net.neoforged.fml.loading.FMLEnvironment
+import net.neoforged.neoforge.event.entity.player.PlayerEvent
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.BackpackEvents
 import net.neoforged.fml.common.Mod
 import net.neoforged.neoforge.common.NeoForge
@@ -31,8 +38,12 @@ object DimensionalBackpacks {
                 event.accept(ModItems.BACKPACK_TIER_1.get())
                 event.accept(ModItems.BACKPACK_TIER_2.get())
                 event.accept(ModItems.BACKPACK_TIER_3.get())
+                event.accept(ModItems.HOTSPOT.get())
             }
         }
+        MOD_BUS.addListener<RegisterPayloadHandlersEvent> { ModNetwork.register(it) }
+        NeoForge.EVENT_BUS.addListener<PlayerEvent.PlayerLoggedOutEvent> { HotspotSessions.end(it.entity) }
+        if (FMLEnvironment.dist == Dist.CLIENT) ClientInit.init()
         NeoForge.EVENT_BUS.addListener<RegisterCommandsEvent> { DebugCommands.register(it.dispatcher) }
         NeoForge.EVENT_BUS.addListener(BackpackEvents::onPlayerTick)
         NeoForge.EVENT_BUS.addListener(BackpackEvents::onServerTick)

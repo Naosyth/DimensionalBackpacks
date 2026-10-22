@@ -20,4 +20,19 @@ data class Plot(val id: Int, val cell: Int, var tier: Tier) {
     /** Where a player arriving from outside should stand. */
     val spawnPos: BlockPos
         get() = origin.offset(outerSize / 2, 1, outerSize / 2)
+
+    /** Hotspot slot (0-based, matching the keybind) to the position of its hotspot block. */
+    val hotspots = HashMap<Int, BlockPos>()
+
+    /** Slot chosen as primary by the player, or -1 for none. */
+    var primary = -1
+
+    /** The slot a tap of the hotkey uses: the chosen primary if it still exists, else the lowest slot. */
+    fun primarySlot(): Int? = if (primary in hotspots) primary else hotspots.keys.minOrNull()
+
+    /** True for any block of the plot, walls included. */
+    fun contains(pos: BlockPos): Boolean {
+        val o = origin
+        return pos.x in o.x until o.x + outerSize && pos.y in o.y until o.y + outerSize && pos.z in o.z until o.z + outerSize
+    }
 }
