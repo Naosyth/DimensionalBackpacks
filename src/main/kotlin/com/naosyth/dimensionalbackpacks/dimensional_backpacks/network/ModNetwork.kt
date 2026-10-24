@@ -1,6 +1,8 @@
 package com.naosyth.dimensionalbackpacks.dimensional_backpacks.network
 
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.HotspotUse
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.PlotManager
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.PlotTravel
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.client.ClientInit
 import net.minecraft.server.level.ServerPlayer
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent
@@ -11,6 +13,12 @@ object ModNetwork {
         registrar.playToServer(HotspotUsePayload.TYPE, HotspotUsePayload.CODEC) { payload, context ->
             context.enqueueWork {
                 (context.player() as? ServerPlayer)?.let { HotspotUse.use(it, payload.slot) }
+            }
+        }
+        registrar.playToServer(ExitPayload.TYPE, ExitPayload.CODEC) { _, context ->
+            context.enqueueWork {
+                val player = context.player() as? ServerPlayer ?: return@enqueueWork
+                if (player.level().dimension() == PlotManager.DIMENSION) PlotTravel.exit(player)
             }
         }
         registrar.playToServer(HotspotMenuRequestPayload.TYPE, HotspotMenuRequestPayload.CODEC) { _, context ->

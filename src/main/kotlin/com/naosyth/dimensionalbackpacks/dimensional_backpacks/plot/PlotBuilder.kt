@@ -16,6 +16,5 @@ object PlotBuilder {
             val edge = x == 0 || y == 0 || z == 0 || x == size - 1 || y == size - 1 || z == size - 1
             level.setBlock(BlockPos(origin.x + x, origin.y + y, origin.z + z), if (edge) wall else air, 2)
         }
-        level.setBlock(plot.exitPos, ModBlocks.BACKPACK_EXIT.get().defaultBlockState(), 2)
     }
 }

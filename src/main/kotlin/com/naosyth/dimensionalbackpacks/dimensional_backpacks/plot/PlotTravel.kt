@@ -1,5 +1,6 @@
 package com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot
 
+import net.minecraft.core.BlockPos
 import net.minecraft.core.registries.Registries
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.resources.ResourceKey
@@ -22,8 +23,13 @@ object PlotTravel {
             data.putFloat("pitch", player.xRot)
             player.persistentData.put(RETURN_KEY, data)
         }
-        val pos = plot.spawnPos
-        player.teleportTo(pocket, pos.x + 0.5, pos.y.toDouble(), pos.z + 0.5, player.yRot, player.xRot)
+        val custom = plot.customSpawn
+        if (custom != null) {
+            player.teleportTo(pocket, custom.x, custom.y, custom.z, custom.yaw, custom.pitch)
+        } else {
+            val pos = plot.defaultSpawnPos
+            player.teleportTo(pocket, pos.x + 0.5, pos.y.toDouble(), pos.z + 0.5, player.yRot, player.xRot)
+        }
         player.fallDistance = 0f
     }
 

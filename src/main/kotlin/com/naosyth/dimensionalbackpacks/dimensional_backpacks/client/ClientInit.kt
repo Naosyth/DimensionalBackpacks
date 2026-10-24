@@ -1,6 +1,7 @@
 package com.naosyth.dimensionalbackpacks.dimensional_backpacks.client
 
 import com.mojang.blaze3d.platform.InputConstants
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.network.ExitPayload
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.network.HotspotMenuPayload
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.network.HotspotMenuRequestPayload
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.network.HotspotUsePayload
@@ -37,8 +38,18 @@ object ClientInit {
     // Ticks the key has been held; 0 when idle.
     private var held = 0
 
+    private val exitKey = KeyMapping(
+        "key.dimensional_backpacks.exit",
+        InputConstants.Type.KEYSYM,
+        GLFW.GLFW_KEY_X,
+        "key.categories.dimensional_backpacks"
+    )
+
     fun init() {
-        MOD_BUS.addListener<RegisterKeyMappingsEvent> { it.register(hotspotKey) }
+        MOD_BUS.addListener<RegisterKeyMappingsEvent> {
+            it.register(hotspotKey)
+            it.register(exitKey)
+        }
         MOD_BUS.addListener<EntityRenderersEvent.AddLayers> { event ->
             for (skin in listOf(PlayerSkin.Model.WIDE, PlayerSkin.Model.SLIM)) {
                 val renderer = event.getSkin(skin) as? PlayerRenderer ?: continue
@@ -66,6 +77,8 @@ object ClientInit {
             held = 0
             return
         }
+        // The server ignores this outside a backpack.
+        while (exitKey.consumeClick()) PacketDistributor.sendToServer(ExitPayload)
         if (hotspotKey.isDown) {
             held++
             if (held == HOLD_TICKS) PacketDistributor.sendToServer(HotspotMenuRequestPayload)

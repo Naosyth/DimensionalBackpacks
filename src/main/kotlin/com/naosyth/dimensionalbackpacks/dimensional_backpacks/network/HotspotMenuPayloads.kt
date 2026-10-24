@@ -8,6 +8,17 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.ItemStack
 
+/** Client to server: leave the backpack the player is currently inside. */
+object ExitPayload : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<ExitPayload> = TYPE
+
+    val TYPE = CustomPacketPayload.Type<ExitPayload>(
+        ResourceLocation.fromNamespaceAndPath(DimensionalBackpacks.ID, "exit")
+    )
+
+    val CODEC: StreamCodec<RegistryFriendlyByteBuf, ExitPayload> = StreamCodec.unit(ExitPayload)
+}
+
 /** Client to server: the hotkey was held, so send back the hotspots to choose from. */
 object HotspotMenuRequestPayload : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<HotspotMenuRequestPayload> = TYPE

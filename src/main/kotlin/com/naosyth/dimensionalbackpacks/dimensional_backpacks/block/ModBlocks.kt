@@ -15,14 +15,13 @@ object ModBlocks {
 
     val PLOT_WALL = REGISTRY.registerSimpleBlock("plot_wall", unbreakable())
 
-    val BACKPACK_EXIT = REGISTRY.register("backpack_exit", Supplier { ExitBlock(unbreakable()) })
-
     // Hotspots live in the wall and are only ever removed through the hotspot's own logic.
     val HOTSPOT = REGISTRY.register("hotspot", Supplier { HotspotBlock(unbreakable()) })
 
     private fun backpackProperties() = BlockBehaviour.Properties.of()
         .strength(2.0f)
         .sound(SoundType.WOOL)
+        .noOcclusion()
         .pushReaction(PushReaction.BLOCK)
 
     val BACKPACK_TIER_1 = REGISTRY.register("backpack_tier_1", Supplier { BackpackBlock(Tier.TIER_1, backpackProperties()) })

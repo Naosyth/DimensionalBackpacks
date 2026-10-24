@@ -47,6 +47,11 @@ class PlotManager : SavedData() {
         setDirty()
     }
 
+    fun setSpawn(plot: Plot, spawn: Spawn) {
+        plot.customSpawn = spawn
+        setDirty()
+    }
+
     fun removeHotspot(plot: Plot, pos: BlockPos) {
         if (plot.hotspots.values.removeIf { it == pos }) setDirty()
     }
@@ -68,6 +73,15 @@ class PlotManager : SavedData() {
             entry.putInt("cell", plot.cell)
             entry.putInt("tier", plot.tier.ordinal)
             entry.putInt("primary", plot.primary)
+            plot.customSpawn?.let {
+                val spawn = CompoundTag()
+                spawn.putDouble("x", it.x)
+                spawn.putDouble("y", it.y)
+                spawn.putDouble("z", it.z)
+                spawn.putFloat("yaw", it.yaw)
+                spawn.putFloat("pitch", it.pitch)
+                entry.put("spawnPoint", spawn)
+            }
             val hotspots = ListTag()
             for ((slot, pos) in plot.hotspots) {
                 val hotspot = CompoundTag()
@@ -102,6 +116,10 @@ class PlotManager : SavedData() {
                 val entry = list.getCompound(i)
                 val plot = Plot(entry.getInt("id"), entry.getInt("cell"), Tier.fromOrdinal(entry.getInt("tier")))
                 plot.primary = if (entry.contains("primary")) entry.getInt("primary") else -1
+                if (entry.contains("spawnPoint")) {
+                    val s = entry.getCompound("spawnPoint")
+                    plot.customSpawn = Spawn(s.getDouble("x"), s.getDouble("y"), s.getDouble("z"), s.getFloat("yaw"), s.getFloat("pitch"))
+                }
                 val hotspots = entry.getList("hotspots", Tag.TAG_COMPOUND.toInt())
                 for (j in 0 until hotspots.size) {
                     val hotspot = hotspots.getCompound(j)
