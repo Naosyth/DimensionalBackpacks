@@ -7,16 +7,35 @@ import net.neoforged.neoforge.common.ModConfigSpec
 /** Server-side settings, in `config/dimensional_backpacks-common.toml`. */
 object ModConfig {
     /** Highest hotspot count a tier may be configured with. */
-    const val MAX_HOTSPOTS = 3
+    const val MAX_HOTSPOTS = 8
 
     private val builder = ModConfigSpec.Builder()
 
     private val hotspotCounts: Map<Tier, ModConfigSpec.IntValue>
 
-    private val placementBlacklist: ModConfigSpec.ConfigValue<List<String>>
-    private val hotspotBlacklist: ModConfigSpec.ConfigValue<List<String>>
-    private val useWhitelist: ModConfigSpec.BooleanValue
-    private val hotspotWhitelist: ModConfigSpec.ConfigValue<List<String>>
+    enum class ListMode { WHITELIST, BLACKLIST }
+
+    /** A mode plus a block list; matchers are rebuilt only when the config's contents change. */
+    private class BlockRule(
+        private val mode: ModConfigSpec.EnumValue<ListMode>,
+        private val entries: ModConfigSpec.ConfigValue<List<String>>,
+    ) {
+        private var source: List<String>? = null
+        private var matcher = BlockMatcher(emptyList())
+
+        fun allows(state: BlockState): Boolean {
+            val list = entries.get()
+            if (list != source) {
+                source = list
+                matcher = BlockMatcher(list)
+            }
+            val listed = matcher.matches(state)
+            return if (mode.get() == ListMode.WHITELIST) listed else !listed
+        }
+    }
+
+    private val placementRule: BlockRule
+    private val hotspotRule: BlockRule
 
     init {
         builder.comment("How many hotspots each backpack tier supports. 0 disables hotspots for that tier.")
@@ -27,65 +46,38 @@ object ModConfig {
         builder.pop()
 
         val formats = "Entries: \"modid:block\" for one block, \"modid:*\" for a whole mod, \"#modid:tag\" for a block tag."
-        builder.push("blacklists")
-        placementBlacklist = builder
-            .comment("Blocks that can't be placed inside a backpack.", formats)
-            .defineListAllowEmpty("placement", emptyList<String>()) { it is String }
-        hotspotBlacklist = builder
-            .comment("Blocks that can be placed inside a backpack but can't be used through a hotspot.", formats)
-            .defineListAllowEmpty("hotspot", listOf("ae2", "toms_storage", "mekanism", "sophisticatedstorage")) { it is String }
+        builder.comment("Which blocks may be placed in a backpack, and which can be used through hotspots.")
+            .push("allowed_blocks")
+        placementRule = defineRule(
+            "placement", "Blocks that can be placed inside a backpack.",
+            ListMode.BLACKLIST, emptyList(), formats
+        )
+        hotspotRule = defineRule(
+            "hotspot",
+            "Blocks that can be used through a hotspot. Many mods' menus need the block nearby or loaded on the client, " +
+                "and fail or crash from a hotspot, so only whitelist mods you've tested.",
+            ListMode.WHITELIST, listOf("minecraft", "refinedstorage"), formats
+        )
         builder.pop()
+    }
 
-        builder.push("hotspot_access")
-        useWhitelist = builder
-            .comment(
-                "If true, hotspots only work on blocks listed in 'whitelist' (the blacklist is still applied after).",
-                "Many mods open menus that need the block to be near the player or loaded on the client, and fail or crash from a hotspot.",
-                "Only add mods you've tested."
-            )
-            .define("use_whitelist", true)
-        hotspotWhitelist = builder
-            .comment("Blocks usable through hotspots when use_whitelist is true.", formats)
-            .defineListAllowEmpty("whitelist", listOf("minecraft", "refinedstorage")) { it is String }
+    private fun defineRule(name: String, description: String, mode: ListMode, entries: List<String>, formats: String): BlockRule {
+        builder.comment(description).push(name)
+        val modeValue = builder
+            .comment("WHITELIST: only listed blocks are allowed. BLACKLIST: listed blocks are not allowed.")
+            .defineEnum("mode", mode)
+        val list = builder
+            .comment("The blocks the mode applies to.", formats)
+            .defineListAllowEmpty("blocks", entries) { it is String }
         builder.pop()
+        return BlockRule(modeValue, list)
     }
 
     val SPEC: ModConfigSpec = builder.build()
 
-    // Matchers are rebuilt only when the config's contents change.
-    private var placementSource: List<String>? = null
-    private var placementMatcher = BlockMatcher(emptyList())
-    private var hotspotSource: List<String>? = null
-    private var hotspotMatcher = BlockMatcher(emptyList())
-
     fun maxHotspots(tier: Tier): Int = hotspotCounts.getValue(tier).get()
 
-    fun isPlacementBlocked(state: BlockState): Boolean {
-        val list = placementBlacklist.get()
-        if (list != placementSource) {
-            placementSource = list
-            placementMatcher = BlockMatcher(list)
-        }
-        return placementMatcher.matches(state)
-    }
+    fun isPlacementBlocked(state: BlockState): Boolean = !placementRule.allows(state)
 
-    private var whitelistSource: List<String>? = null
-    private var whitelistMatcher = BlockMatcher(emptyList())
-
-    fun isHotspotBlocked(state: BlockState): Boolean {
-        if (useWhitelist.get()) {
-            val allowed = hotspotWhitelist.get()
-            if (allowed != whitelistSource) {
-                whitelistSource = allowed
-                whitelistMatcher = BlockMatcher(allowed)
-            }
-            if (!whitelistMatcher.matches(state)) return true
-        }
-        val list = hotspotBlacklist.get()
-        if (list != hotspotSource) {
-            hotspotSource = list
-            hotspotMatcher = BlockMatcher(list)
-        }
-        return hotspotMatcher.matches(state)
-    }
+    fun isHotspotBlocked(state: BlockState): Boolean = !hotspotRule.allows(state)
 }
