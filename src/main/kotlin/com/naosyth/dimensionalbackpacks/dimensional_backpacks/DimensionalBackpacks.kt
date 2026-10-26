@@ -17,6 +17,8 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.BackpackEvents
 import net.neoforged.fml.ModList
+import net.neoforged.fml.ModLoadingContext
+import net.neoforged.fml.config.ModConfig
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.item.CuriosCompat
 import top.theillusivec4.curios.api.event.CurioCanEquipEvent
 import net.neoforged.fml.common.Mod
@@ -53,6 +55,8 @@ object DimensionalBackpacks {
         NeoForge.EVENT_BUS.addListener(BackpackEvents::onPlayerTick)
         NeoForge.EVENT_BUS.addListener(BackpackEvents::onServerTick)
         NeoForge.EVENT_BUS.addListener(BackpackEvents::onServerStarted)
+        NeoForge.EVENT_BUS.addListener(BackpackEvents::onBlockPlaced)
+        ModLoadingContext.get().activeContainer.registerConfig(ModConfig.Type.COMMON, com.naosyth.dimensionalbackpacks.dimensional_backpacks.config.ModConfig.SPEC)
         if (ModList.get().isLoaded("curios")) {
             NeoForge.EVENT_BUS.addListener<CurioCanEquipEvent> { CuriosCompat.onCanEquip(it) }
         }

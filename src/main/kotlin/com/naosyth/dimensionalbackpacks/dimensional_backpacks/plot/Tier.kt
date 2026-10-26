@@ -1,6 +1,7 @@
 package com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot
 
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.DimensionalBackpacks
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.config.ModConfig
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.NbtAccounter
 import net.minecraft.nbt.NbtIo
@@ -76,7 +77,7 @@ class PlotLayout(
 enum class Tier {
     TIER_1, TIER_2, TIER_3;
 
-    val maxHotspots: Int get() = ordinal + 1
+    val maxHotspots: Int get() = ModConfig.maxHotspots(this)
 
     /** Registry name of this tier's backpack block and item. */
     val registryName: String get() = "backpack_tier_${ordinal + 1}"

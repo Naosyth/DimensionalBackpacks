@@ -47,7 +47,10 @@ data class Plot(val id: Int, val cell: Int, var tier: Tier) {
     var primary = -1
 
     /** The slot a tap of the hotkey uses: the chosen primary if it still exists, else the lowest slot. */
-    fun primarySlot(): Int? = if (primary in hotspots) primary else hotspots.keys.minOrNull()
+    fun primarySlot(): Int? {
+        val active = hotspots.keys.filter { it < tier.maxHotspots }
+        return if (primary in active) primary else active.minOrNull()
+    }
 
     /** True for any block of the plot's bounding box, walls included. */
     fun contains(pos: BlockPos): Boolean {
