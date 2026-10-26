@@ -22,3 +22,7 @@ run
 
 # Kotlin compiler session data
 .kotlin
+
+# Private planning notes
+DESIGN.md
+TODO.md
