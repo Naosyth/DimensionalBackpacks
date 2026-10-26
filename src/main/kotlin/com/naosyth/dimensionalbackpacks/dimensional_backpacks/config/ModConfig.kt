@@ -15,6 +15,8 @@ object ModConfig {
 
     private val placementBlacklist: ModConfigSpec.ConfigValue<List<String>>
     private val hotspotBlacklist: ModConfigSpec.ConfigValue<List<String>>
+    private val useWhitelist: ModConfigSpec.BooleanValue
+    private val hotspotWhitelist: ModConfigSpec.ConfigValue<List<String>>
 
     init {
         builder.comment("How many hotspots each backpack tier supports. 0 disables hotspots for that tier.")
@@ -31,7 +33,20 @@ object ModConfig {
             .defineListAllowEmpty("placement", emptyList<String>()) { it is String }
         hotspotBlacklist = builder
             .comment("Blocks that can be placed inside a backpack but can't be used through a hotspot.", formats)
-            .defineListAllowEmpty("hotspot", emptyList<String>()) { it is String }
+            .defineListAllowEmpty("hotspot", listOf("ae2", "toms_storage", "mekanism", "sophisticatedstorage")) { it is String }
+        builder.pop()
+
+        builder.push("hotspot_access")
+        useWhitelist = builder
+            .comment(
+                "If true, hotspots only work on blocks listed in 'whitelist' (the blacklist is still applied after).",
+                "Many mods open menus that need the block to be near the player or loaded on the client, and fail or crash from a hotspot.",
+                "Only add mods you've tested."
+            )
+            .define("use_whitelist", true)
+        hotspotWhitelist = builder
+            .comment("Blocks usable through hotspots when use_whitelist is true.", formats)
+            .defineListAllowEmpty("whitelist", listOf("minecraft", "refinedstorage")) { it is String }
         builder.pop()
     }
 
@@ -54,7 +69,18 @@ object ModConfig {
         return placementMatcher.matches(state)
     }
 
+    private var whitelistSource: List<String>? = null
+    private var whitelistMatcher = BlockMatcher(emptyList())
+
     fun isHotspotBlocked(state: BlockState): Boolean {
+        if (useWhitelist.get()) {
+            val allowed = hotspotWhitelist.get()
+            if (allowed != whitelistSource) {
+                whitelistSource = allowed
+                whitelistMatcher = BlockMatcher(allowed)
+            }
+            if (!whitelistMatcher.matches(state)) return true
+        }
         val list = hotspotBlacklist.get()
         if (list != hotspotSource) {
             hotspotSource = list

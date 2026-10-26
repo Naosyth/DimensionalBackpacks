@@ -47,7 +47,7 @@ object HotspotUse {
             val targetPos = hotspot.pos.relative(hotspot.face)
             val target = pocket.getBlockState(targetPos)
             if (ModConfig.isHotspotBlocked(target)) return@mapNotNull null
-            val icon = if (target.isAir) ItemStack.EMPTY else target.getCloneItemStack(BlockHitResult(Vec3.atCenterOf(targetPos), Direction.UP, targetPos, false), pocket, targetPos, player)
+            val icon = if (target.isAir) ItemStack.EMPTY else target.getCloneItemStack(hitFor(hotspot), pocket, targetPos, player)
             HotspotMenuPayload.Entry(slot, icon, slot == primary)
         }
         PacketDistributor.sendToPlayer(player, HotspotMenuPayload(entries))
@@ -55,6 +55,16 @@ object HotspotUse {
 
     private fun notifyUnit(player: ServerPlayer, message: String) {
         notify(player, message)
+    }
+
+    /**
+     * The click a player standing at the hotspot and looking straight at the block would make: it lands
+     * on the target's face next to the wall, so multipart blocks pick the part on that side.
+     */
+    private fun hitFor(hotspot: Hotspot): BlockHitResult {
+        val targetPos = hotspot.pos.relative(hotspot.face)
+        val location = Vec3.atCenterOf(targetPos).relative(hotspot.face.opposite, 0.5)
+        return BlockHitResult(location, hotspot.face.opposite, targetPos, false)
     }
 
     /** Marks the hotspot in [slot] as the plot's primary. */
@@ -87,7 +97,7 @@ object HotspotUse {
         if (target.isAir) return notifyUnit(player, "Nothing is touching that hotspot")
         if (ModConfig.isHotspotBlocked(target)) return notifyUnit(player, "That block can't be used through a hotspot")
 
-        val hit = BlockHitResult(Vec3.atCenterOf(targetPos).relative(facing.opposite, 0.5), facing.opposite, targetPos, false)
+        val hit = hitFor(hotspot)
         val hand = InteractionHand.MAIN_HAND
         // Not ServerPlayerGameMode.useItemOn: its item-use path builds a context from player.level(),
         // which would act on the player's own dimension at pocket coordinates.
