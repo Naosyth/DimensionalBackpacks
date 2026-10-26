@@ -1,11 +1,12 @@
 {
   "type": "minecraft:crafting_shaped",
   "category": "equipment",
-  "pattern": ["LDL", "LCL", "LLL"],
+  "pattern": ["LEL", "LCL", "LNL"],
   "key": {
+    "E": { "item": "minecraft:ender_pearl" },
     "L": { "item": "minecraft:leather" },
-    "D": { "item": "minecraft:diamond" },
-    "C": { "item": "minecraft:ender_chest" }
+    "N": { "item": "minecraft:netherite_ingot" },
+    "C": { "item": "minecraft:chest" }
   },
   "result": { "id": "dimensional_backpacks:backpack_tier_3", "count": 1 }
 }
