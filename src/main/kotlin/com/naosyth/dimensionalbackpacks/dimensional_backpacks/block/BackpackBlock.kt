@@ -8,6 +8,8 @@ import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.PlotManager
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.PlotTravel
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.Tier
 import net.minecraft.core.BlockPos
+import net.minecraft.core.component.DataComponents
+import net.minecraft.world.item.component.DyedItemColor
 import net.minecraft.core.Direction
 import net.minecraft.world.item.context.BlockPlaceContext
 import net.minecraft.world.level.block.Mirror
@@ -78,9 +80,14 @@ class BackpackBlock(val tier: Tier, properties: Properties) : Block(properties),
     override fun setPlacedBy(level: Level, pos: BlockPos, state: BlockState, placer: LivingEntity?, stack: ItemStack) {
         super.setPlacedBy(level, pos, state, placer, stack)
         val be = level.getBlockEntity(pos) as? BackpackBlockEntity ?: return
-        if (level !is ServerLevel) return
+        be.color = stack.get(DataComponents.DYED_COLOR)?.rgb
+        if (level !is ServerLevel) {
+            // Client prediction: show the dye immediately instead of waiting for the server's update.
+            level.sendBlockUpdated(pos, state, state, 3)
+            return
+        }
         be.plotId = stack.get(ModComponents.PLOT_ID.get()) ?: PlotManager.allocate(level.server, tier)?.id ?: 0
-        be.setChanged()
+        level.sendBlockUpdated(pos, state, state, 3)
     }
 
     override fun useWithoutItem(
@@ -99,6 +106,7 @@ class BackpackBlock(val tier: Tier, properties: Properties) : Block(properties),
             be.plotId = plot.id
             be.setChanged()
         }
+        PlotManager.get(pocket).setColor(plot, be.color, pocket)
         PlotTravel.enter(player, plot, pocket)
         return InteractionResult.CONSUME
     }
@@ -107,6 +115,7 @@ class BackpackBlock(val tier: Tier, properties: Properties) : Block(properties),
         val stack = ItemStack(this)
         val be = params.getOptionalParameter(LootContextParams.BLOCK_ENTITY) as? BackpackBlockEntity
         if (be != null && be.plotId != 0) stack.set(ModComponents.PLOT_ID.get(), be.plotId)
+        be?.color?.let { stack.set(DataComponents.DYED_COLOR, DyedItemColor(it, true)) }
         return mutableListOf(stack)
     }
 

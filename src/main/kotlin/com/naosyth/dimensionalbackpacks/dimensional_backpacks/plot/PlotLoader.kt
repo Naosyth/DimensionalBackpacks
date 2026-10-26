@@ -17,9 +17,17 @@ object PlotLoader {
 
     fun keepLoaded(server: MinecraftServer, plot: Plot) {
         val pocket = PlotManager.getPocketLevel(server) ?: return
-        // Plot origins are chunk-aligned and plots are at most 11 blocks wide, so one chunk holds a plot.
-        pocket.setChunkForced(plot.origin.x shr 4, plot.origin.z shr 4, true)
+        forEachChunk(plot) { x, z -> pocket.setChunkForced(x, z, true) }
         lastRefresh[plot.id] = server.tickCount.toLong()
+    }
+
+    // Plot origins are chunk-aligned, but a plot can span several chunks.
+    private fun forEachChunk(plot: Plot, action: (Int, Int) -> Unit) {
+        val o = plot.origin
+        val l = plot.tier.layout
+        for (x in (o.x shr 4)..((o.x + l.sizeX - 1) shr 4)) {
+            for (z in (o.z shr 4)..((o.z + l.sizeZ - 1) shr 4)) action(x, z)
+        }
     }
 
     fun tick(server: MinecraftServer) {
@@ -30,7 +38,7 @@ object PlotLoader {
         for (id in expired) {
             lastRefresh.remove(id)
             val plot = manager.get(id) ?: continue
-            pocket.setChunkForced(plot.origin.x shr 4, plot.origin.z shr 4, false)
+            forEachChunk(plot) { x, z -> pocket.setChunkForced(x, z, false) }
         }
     }
 

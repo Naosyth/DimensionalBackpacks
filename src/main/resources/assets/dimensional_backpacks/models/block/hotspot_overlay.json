@@ -1,0 +1,17 @@
+{
+  "parent": "minecraft:block/block",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "particle": "dimensional_backpacks:block/plot_wall",
+    "overlay": "dimensional_backpacks:block/hotspot"
+  },
+  "elements": [
+    {
+      "from": [0, 0, -0.01],
+      "to": [16, 16, -0.01],
+      "faces": {
+        "north": { "texture": "#overlay" }
+      }
+    }
+  ]
+}

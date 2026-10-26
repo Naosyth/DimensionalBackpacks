@@ -1,6 +1,6 @@
 package com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot
 
-import com.naosyth.dimensionalbackpacks.dimensional_backpacks.block.HotspotBlock
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.block.PlotWallBlock
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.item.BackpackItem
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.item.ModComponents
 import net.minecraft.core.Direction
@@ -40,10 +40,9 @@ object HotspotUse {
         val pocket = PlotManager.getPocketLevel(player.server) ?: return
         PlotLoader.keepLoaded(player.server, plot)
         val primary = plot.primarySlot()
-        val entries = plot.hotspots.toSortedMap().mapNotNull { (slot, pos) ->
-            val state = pocket.getBlockState(pos)
-            if (state.block !is HotspotBlock) return@mapNotNull null
-            val targetPos = pos.relative(state.getValue(HotspotBlock.FACING))
+        val entries = plot.hotspots.toSortedMap().mapNotNull { (slot, hotspot) ->
+            if (!PlotWallBlock.hasHotspot(pocket.getBlockState(hotspot.pos), hotspot.face)) return@mapNotNull null
+            val targetPos = hotspot.pos.relative(hotspot.face)
             val target = pocket.getBlockState(targetPos)
             val icon = if (target.isAir) ItemStack.EMPTY else target.getCloneItemStack(BlockHitResult(Vec3.atCenterOf(targetPos), Direction.UP, targetPos, false), pocket, targetPos, player)
             HotspotMenuPayload.Entry(slot, icon, slot == primary)
@@ -58,9 +57,9 @@ object HotspotUse {
     /** Marks the hotspot in [slot] as the plot's primary. */
     fun setPrimary(player: ServerPlayer, slot: Int) {
         val plot = wornPlot(player) ?: return
-        val pos = plot.hotspots[slot] ?: return
+        val hotspot = plot.hotspots[slot] ?: return
         val pocket = PlotManager.getPocketLevel(player.server) ?: return
-        PlotManager.get(pocket).setPrimary(plot, pos)
+        PlotManager.get(pocket).setPrimary(plot, hotspot.pos, hotspot.face)
         notify(player, "Primary hotspot set")
     }
 
@@ -73,15 +72,14 @@ object HotspotUse {
         val pocket = PlotManager.getPocketLevel(server) ?: return
         val slot = if (requestedSlot == PRIMARY) plot.primarySlot() else requestedSlot
         if (slot == null) return notifyUnit(player, "This backpack has no hotspots")
-        val hotspotPos = plot.hotspots[slot] ?: return notifyUnit(player, "That hotspot isn't set up")
+        val hotspot = plot.hotspots[slot] ?: return notifyUnit(player, "That hotspot isn't set up")
 
-        val state = pocket.getBlockState(hotspotPos)
-        if (state.block !is HotspotBlock) return notifyUnit(player, "That hotspot isn't set up")
+        if (!PlotWallBlock.hasHotspot(pocket.getBlockState(hotspot.pos), hotspot.face)) return notifyUnit(player, "That hotspot isn't set up")
 
         // The plot may have been unloaded; make sure the target exists before using it.
         PlotLoader.keepLoaded(server, plot)
-        val facing = state.getValue(HotspotBlock.FACING)
-        val targetPos = hotspotPos.relative(facing)
+        val facing = hotspot.face
+        val targetPos = hotspot.pos.relative(facing)
         val target = pocket.getBlockState(targetPos)
         if (target.isAir) return notifyUnit(player, "Nothing is touching that hotspot")
 

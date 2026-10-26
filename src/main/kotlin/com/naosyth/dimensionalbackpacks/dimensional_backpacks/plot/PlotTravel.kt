@@ -24,6 +24,7 @@ object PlotTravel {
             player.persistentData.put(RETURN_KEY, data)
         }
         val custom = plot.customSpawn
+        PlotColorSync.send(player, plot)
         if (custom != null) {
             player.teleportTo(pocket, custom.x, custom.y, custom.z, custom.yaw, custom.pitch)
         } else {

@@ -44,6 +44,23 @@ data class HotspotSetPrimaryPayload(val slot: Int) : CustomPacketPayload {
     }
 }
 
+/** Server to client: the tint of a plot's interior walls, or [NONE] for undyed. */
+data class PlotColorPayload(val plotId: Int, val color: Int) : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<PlotColorPayload> = TYPE
+
+    companion object {
+        const val NONE = -1
+        val TYPE = CustomPacketPayload.Type<PlotColorPayload>(
+            ResourceLocation.fromNamespaceAndPath(DimensionalBackpacks.ID, "plot_color")
+        )
+        val CODEC: StreamCodec<RegistryFriendlyByteBuf, PlotColorPayload> = StreamCodec.composite(
+            ByteBufCodecs.VAR_INT, PlotColorPayload::plotId,
+            ByteBufCodecs.INT, PlotColorPayload::color,
+            ::PlotColorPayload
+        )
+    }
+}
+
 /** Server to client: the worn backpack's hotspots, each shown as the block it touches. */
 data class HotspotMenuPayload(val entries: List<Entry>) : CustomPacketPayload {
     data class Entry(val slot: Int, val icon: ItemStack, val primary: Boolean) {

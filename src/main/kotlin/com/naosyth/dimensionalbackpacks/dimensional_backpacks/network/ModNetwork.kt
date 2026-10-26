@@ -4,6 +4,7 @@ import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.HotspotUse
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.PlotManager
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.PlotTravel
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.client.ClientInit
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.client.ClientPlotColors
 import net.minecraft.server.level.ServerPlayer
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent
 
@@ -30,6 +31,9 @@ object ModNetwork {
             context.enqueueWork {
                 (context.player() as? ServerPlayer)?.let { HotspotUse.setPrimary(it, payload.slot) }
             }
+        }
+        registrar.playToClient(PlotColorPayload.TYPE, PlotColorPayload.CODEC) { payload, context ->
+            context.enqueueWork { ClientPlotColors.set(payload.plotId, payload.color) }
         }
         // Only invoked on the client, so the client-only class is never loaded on a dedicated server.
         registrar.playToClient(HotspotMenuPayload.TYPE, HotspotMenuPayload.CODEC) { payload, context ->

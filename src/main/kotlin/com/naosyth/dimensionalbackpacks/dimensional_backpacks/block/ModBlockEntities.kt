@@ -14,9 +14,7 @@ object ModBlockEntities {
     val BACKPACK = REGISTRY.register("backpack") { ->
         BlockEntityType.Builder.of(
             ::BackpackBlockEntity,
-            ModBlocks.BACKPACK_TIER_1.get(),
-            ModBlocks.BACKPACK_TIER_2.get(),
-            ModBlocks.BACKPACK_TIER_3.get()
+            *ModBlocks.BACKPACKS.values.map { it.get() }.toTypedArray()
         ).build(noDatafixerType())
     }
 

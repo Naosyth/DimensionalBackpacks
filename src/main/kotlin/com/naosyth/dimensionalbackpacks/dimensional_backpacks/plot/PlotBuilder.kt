@@ -6,15 +6,19 @@ import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.level.block.Blocks
 
 object PlotBuilder {
-    /** Builds a hollow room: unbreakable walls around an empty interior. */
+    /** Builds the walls and clears the interior, as laid out by the tier's structure file. */
     fun build(level: ServerLevel, plot: Plot) {
         val wall = ModBlocks.PLOT_WALL.get().defaultBlockState()
         val air = Blocks.AIR.defaultBlockState()
-        val size = plot.outerSize
+        val l = plot.tier.layout
         val origin = plot.origin
-        for (x in 0 until size) for (y in 0 until size) for (z in 0 until size) {
-            val edge = x == 0 || y == 0 || z == 0 || x == size - 1 || y == size - 1 || z == size - 1
-            level.setBlock(BlockPos(origin.x + x, origin.y + y, origin.z + z), if (edge) wall else air, 2)
+        for (x in 0 until l.sizeX) for (y in 0 until l.sizeY) for (z in 0 until l.sizeZ) {
+            val state = when {
+                l.isInterior(x, y, z) -> air
+                l.isWall(x, y, z) -> wall
+                else -> continue
+            }
+            level.setBlock(BlockPos(origin.x + x, origin.y + y, origin.z + z), state, 2)
         }
     }
 }

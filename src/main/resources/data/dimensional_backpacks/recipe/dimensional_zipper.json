@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [" I", "SI", " E"],
+  "key": {
+    "I": { "item": "minecraft:iron_ingot" },
+    "S": { "item": "minecraft:string" },
+    "E": { "item": "minecraft:ender_pearl" }
+  },
+  "result": { "id": "dimensional_backpacks:dimensional_zipper", "count": 1 }
+}

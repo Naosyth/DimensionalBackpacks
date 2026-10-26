@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "WWW",
+    "WDW",
+    "WWW"
+  ],
+  "key": {
+    "W": {
+      "item": "dimensional_backpacks:decorative_wall"
+    },
+    "D": {
+      "item": "minecraft:white_dye"
+    }
+  },
+  "result": {
+    "id": "dimensional_backpacks:decorative_wall",
+    "count": 8,
+    "components": {
+      "minecraft:dyed_color": {
+        "rgb": 16383998,
+        "show_in_tooltip": false
+      }
+    }
+  }
+}

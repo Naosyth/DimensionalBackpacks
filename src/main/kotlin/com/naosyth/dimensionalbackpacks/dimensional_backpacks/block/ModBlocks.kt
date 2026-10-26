@@ -6,6 +6,7 @@ import net.minecraft.world.level.block.SoundType
 import net.minecraft.world.level.block.state.BlockBehaviour
 import net.minecraft.world.level.material.PushReaction
 import net.neoforged.neoforge.registries.DeferredRegister
+import net.neoforged.neoforge.registries.DeferredBlock
 import java.util.function.Supplier
 
 object ModBlocks {
@@ -13,10 +14,13 @@ object ModBlocks {
 
     private fun unbreakable() = BlockBehaviour.Properties.of().strength(-1.0f, 3600000.0f).noLootTable().lightLevel { 15 }
 
-    val PLOT_WALL = REGISTRY.registerSimpleBlock("plot_wall", unbreakable())
+    // Hotspots are per-face block states of the wall.
+    val PLOT_WALL = REGISTRY.register("plot_wall", Supplier { PlotWallBlock(unbreakable()) })
 
-    // Hotspots live in the wall and are only ever removed through the hotspot's own logic.
-    val HOTSPOT = REGISTRY.register("hotspot", Supplier { HotspotBlock(unbreakable()) })
+    // Breakable look-alike for building inside a backpack. It never carries hotspots.
+    val DECORATIVE_WALL = REGISTRY.register("decorative_wall", Supplier {
+        DecorativeWallBlock(BlockBehaviour.Properties.of().strength(1.5f, 6.0f).sound(SoundType.WOOL))
+    })
 
     private fun backpackProperties() = BlockBehaviour.Properties.of()
         .strength(2.0f)
@@ -24,7 +28,9 @@ object ModBlocks {
         .noOcclusion()
         .pushReaction(PushReaction.BLOCK)
 
-    val BACKPACK_TIER_1 = REGISTRY.register("backpack_tier_1", Supplier { BackpackBlock(Tier.TIER_1, backpackProperties()) })
-    val BACKPACK_TIER_2 = REGISTRY.register("backpack_tier_2", Supplier { BackpackBlock(Tier.TIER_2, backpackProperties()) })
-    val BACKPACK_TIER_3 = REGISTRY.register("backpack_tier_3", Supplier { BackpackBlock(Tier.TIER_3, backpackProperties()) })
+    val BACKPACKS: Map<Tier, DeferredBlock<BackpackBlock>> = Tier.entries.associateWith { tier ->
+        REGISTRY.register(tier.registryName, Supplier { BackpackBlock(tier, backpackProperties()) })
+    }
+
+    fun backpack(tier: Tier): DeferredBlock<BackpackBlock> = BACKPACKS.getValue(tier)
 }

@@ -3,6 +3,7 @@ package com.naosyth.dimensionalbackpacks.dimensional_backpacks
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.block.ModBlockEntities
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.block.ModBlocks
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.item.ModComponents
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.item.BackpackUndyeRecipe
 import net.minecraft.world.item.CreativeModeTabs
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.command.DebugCommands
@@ -36,12 +37,12 @@ object DimensionalBackpacks {
         ModItems.REGISTRY.register(MOD_BUS)
         ModBlockEntities.REGISTRY.register(MOD_BUS)
         ModComponents.REGISTRY.register(MOD_BUS)
+        BackpackUndyeRecipe.REGISTRY.register(MOD_BUS)
         MOD_BUS.addListener<BuildCreativeModeTabContentsEvent> { event ->
             if (event.tabKey == CreativeModeTabs.TOOLS_AND_UTILITIES) {
-                event.accept(ModItems.BACKPACK_TIER_1.get())
-                event.accept(ModItems.BACKPACK_TIER_2.get())
-                event.accept(ModItems.BACKPACK_TIER_3.get())
+                for (item in ModItems.allBackpacks()) event.accept(item)
                 event.accept(ModItems.HOTSPOT.get())
+                event.accept(ModItems.DECORATIVE_WALL.get())
                 event.accept(ModItems.ZIPPER.get())
             }
         }

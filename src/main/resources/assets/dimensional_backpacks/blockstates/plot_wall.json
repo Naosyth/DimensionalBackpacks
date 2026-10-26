@@ -1,5 +1,11 @@
 {
-  "variants": {
-    "": { "model": "dimensional_backpacks:block/plot_wall" }
-  }
+  "multipart": [
+    { "apply": { "model": "dimensional_backpacks:block/plot_wall" } },
+    { "when": { "north": "true" }, "apply": { "model": "dimensional_backpacks:block/hotspot_overlay" } },
+    { "when": { "east": "true" }, "apply": { "model": "dimensional_backpacks:block/hotspot_overlay", "y": 90 } },
+    { "when": { "south": "true" }, "apply": { "model": "dimensional_backpacks:block/hotspot_overlay", "y": 180 } },
+    { "when": { "west": "true" }, "apply": { "model": "dimensional_backpacks:block/hotspot_overlay", "y": 270 } },
+    { "when": { "up": "true" }, "apply": { "model": "dimensional_backpacks:block/hotspot_overlay", "x": 270 } },
+    { "when": { "down": "true" }, "apply": { "model": "dimensional_backpacks:block/hotspot_overlay", "x": 90 } }
+  ]
 }
