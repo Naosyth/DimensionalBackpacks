@@ -15,6 +15,32 @@ object HotspotSessions {
     private class Session(val plot: Plot, val menu: AbstractContainerMenu)
 
     private val sessions = HashMap<UUID, Session>()
+    private val inProgress = HashMap<UUID, Pair<Plot, BlockPos>>()
+
+    /** Marks the player as mid-use of a hotspot on [pos], so mod checks made while the block opens its menu can pass. */
+    inline fun <T> during(player: ServerPlayer, plot: Plot, pos: BlockPos, block: () -> T): T {
+        begin(player, plot, pos)
+        try {
+            return block()
+        } finally {
+            finish(player)
+        }
+    }
+
+    fun begin(player: ServerPlayer, plot: Plot, pos: BlockPos) {
+        inProgress[player.uuid] = plot to pos
+    }
+
+    fun finish(player: ServerPlayer) {
+        inProgress.remove(player.uuid)
+    }
+
+    @JvmStatic
+    fun isUsing(player: Player, pos: BlockPos): Boolean {
+        if (player !is ServerPlayer) return false
+        inProgress[player.uuid]?.let { (plot, target) -> if (target == pos || plot.contains(pos)) return true }
+        return allowsInteraction(player, pos)
+    }
 
     fun start(player: ServerPlayer, plot: Plot) {
         if (player.containerMenu !== player.inventoryMenu) sessions[player.uuid] = Session(plot, player.containerMenu)

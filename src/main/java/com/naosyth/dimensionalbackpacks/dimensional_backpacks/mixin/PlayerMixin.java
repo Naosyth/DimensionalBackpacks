@@ -1,6 +1,6 @@
 package com.naosyth.dimensionalbackpacks.dimensional_backpacks.mixin;
 
-import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.HotspotSessions;
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.api.HotspotApi;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
@@ -13,7 +13,7 @@ public abstract class PlayerMixin {
     // Every menu's stillValid distance check goes through this method.
     @Inject(method = "canInteractWithBlock", at = @At("HEAD"), cancellable = true)
     private void dimensionalbackpacks$allowHotspotMenus(BlockPos pos, double distance, CallbackInfoReturnable<Boolean> cir) {
-        if (HotspotSessions.allowsInteraction((Player) (Object) this, pos)) {
+        if (HotspotApi.isUsingHotspot((Player) (Object) this, pos)) {
             cir.setReturnValue(true);
         }
     }

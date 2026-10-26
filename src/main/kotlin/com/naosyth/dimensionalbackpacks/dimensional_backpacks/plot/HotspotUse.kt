@@ -1,5 +1,7 @@
 package com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot
 
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.api.HotspotUseEvent
+import net.neoforged.neoforge.common.NeoForge
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.block.PlotWallBlock
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.config.ModConfig
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.item.BackpackItem
@@ -99,11 +101,14 @@ object HotspotUse {
 
         val hit = hitFor(hotspot)
         val hand = InteractionHand.MAIN_HAND
-        // Not ServerPlayerGameMode.useItemOn: its item-use path builds a context from player.level(),
-        // which would act on the player's own dimension at pocket coordinates.
-        val itemResult = target.useItemOn(player.getItemInHand(hand), pocket, player, hand, hit)
-        if (!itemResult.consumesAction() && itemResult == ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION) {
-            target.useWithoutItem(pocket, player, hit)
+        HotspotSessions.during(player, plot, targetPos) {
+            if (NeoForge.EVENT_BUS.post(HotspotUseEvent(player, pocket, targetPos, target)).isCanceled) return@during
+            // Not ServerPlayerGameMode.useItemOn: its item-use path builds a context from player.level(),
+            // which would act on the player's own dimension at pocket coordinates.
+            val itemResult = target.useItemOn(player.getItemInHand(hand), pocket, player, hand, hit)
+            if (!itemResult.consumesAction() && itemResult == ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION) {
+                target.useWithoutItem(pocket, player, hit)
+            }
         }
         HotspotSessions.start(player, plot)
     }
