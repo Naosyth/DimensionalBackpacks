@@ -16,7 +16,7 @@ import net.minecraft.world.level.block.state.properties.IntegerProperty
 import net.minecraft.world.level.storage.loot.LootParams
 
 /**
- * Breakable look-alike of the plot wall for building inside a backpack. It never carries hotspots.
+ * Breakable look-alike of the plot wall for building inside a backpack.
  * Its dye is a fixed property of the block (0 = undyed, otherwise dye id + 1) and does not follow the backpack's dye.
  */
 class DecorativeWallBlock(properties: Properties) : Block(properties) {

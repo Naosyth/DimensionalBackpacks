@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerPlayer
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.config.ModConfig
 import net.minecraft.network.chat.Component
 import net.minecraft.world.level.Level
+import net.neoforged.neoforge.event.entity.player.PlayerEvent
 import net.neoforged.neoforge.event.level.BlockEvent
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.item.WornBackpack
 import net.neoforged.neoforge.event.server.ServerStartedEvent
@@ -33,6 +34,14 @@ object BackpackEvents {
     fun onServerTick(event: ServerTickEvent.Post) = PlotLoader.tick(event.server)
 
     fun onServerStarted(event: ServerStartedEvent) = PlotLoader.releaseAll(event.server)
+
+    /** The client forgets plot tints between sessions, so a player who logs in inside a backpack needs theirs again. */
+    fun onPlayerLoggedIn(event: PlayerEvent.PlayerLoggedInEvent) {
+        val player = event.entity as? ServerPlayer ?: return
+        if (player.level().dimension() != PlotManager.DIMENSION) return
+        val pocket = PlotManager.getPocketLevel(player.server) ?: return
+        PlotManager.get(pocket).plotAt(player.blockPosition())?.let { PlotColorSync.send(player, it) }
+    }
 
     /** Enforces the placement blacklist inside backpack interiors. */
     fun onBlockPlaced(event: BlockEvent.EntityPlaceEvent) {

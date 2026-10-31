@@ -1,15 +1,26 @@
 package com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot
 
 import net.minecraft.core.BlockPos
-import net.minecraft.core.Direction
 
 /** An exact standing position and view direction. */
 data class Spawn(val x: Double, val y: Double, val z: Double, val yaw: Float, val pitch: Float) {
     val blockPos: BlockPos get() = BlockPos.containing(x, y, z)
 }
 
-/** A hotspot decal on [face] of the wall block at [pos]. The face points into the room. */
-data class Hotspot(val pos: BlockPos, val face: Direction)
+/**
+ * One aggregated view of the plot's storages. [order] lists every storage in the plot by priority, top
+ * first; only those in [enabled] belong to the group. A blank [name] means the group is shown by its number.
+ */
+class StorageGroup(
+    val order: ArrayList<BlockPos> = ArrayList(),
+    val enabled: HashSet<BlockPos> = HashSet(),
+    var name: String = ""
+) {
+    companion object {
+        const val MAX = 9
+        const val MAX_NAME = 24
+    }
+}
 
 /** A backpack interior. Plots are permanent and never store an owner. */
 data class Plot(val id: Int, val cell: Int, var tier: Tier) {
@@ -40,17 +51,8 @@ data class Plot(val id: Int, val cell: Int, var tier: Tier) {
         return tier.layout.isInterior(local.x, local.y, local.z)
     }
 
-    /** Hotspot slot (0-based, matching the keybind) to the position of its hotspot block. */
-    val hotspots = HashMap<Int, Hotspot>()
-
-    /** Slot chosen as primary by the player, or -1 for none. */
-    var primary = -1
-
-    /** The slot a tap of the hotkey uses: the chosen primary if it still exists, else the lowest slot. */
-    fun primarySlot(): Int? {
-        val active = hotspots.keys.filter { it < tier.maxHotspots }
-        return if (primary in active) primary else active.minOrNull()
-    }
+    /** User-defined storage groups, in display order. Maintained by PlotStorage, which keeps at least one. */
+    val groups = ArrayList<StorageGroup>()
 
     /** True for any block of the plot's bounding box, walls included. */
     fun contains(pos: BlockPos): Boolean {

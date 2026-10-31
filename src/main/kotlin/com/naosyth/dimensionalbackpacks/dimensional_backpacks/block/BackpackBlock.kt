@@ -8,6 +8,8 @@ import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.PlotManager
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.PlotTravel
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.Tier
 import net.minecraft.core.BlockPos
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.storage.StorageMenu
+import net.minecraft.core.GlobalPos
 import net.minecraft.core.component.DataComponents
 import net.minecraft.world.item.component.DyedItemColor
 import net.minecraft.core.Direction
@@ -20,6 +22,10 @@ import net.minecraft.world.level.block.state.properties.DirectionProperty
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
+import net.minecraft.stats.Stats
+import net.minecraft.world.InteractionHand
+import net.minecraft.world.ItemInteractionResult
+import net.minecraft.world.item.DyeItem
 import net.minecraft.world.InteractionResult
 import net.minecraft.world.entity.LivingEntity
 import net.minecraft.world.entity.player.Player
@@ -107,8 +113,49 @@ class BackpackBlock(val tier: Tier, properties: Properties) : Block(properties),
             be.setChanged()
         }
         PlotManager.get(pocket).setColor(plot, be.color, pocket)
+        if (!player.isShiftKeyDown) {
+            StorageMenu.open(player, plot, GlobalPos.of(level.dimension(), pos))
+            return InteractionResult.CONSUME
+        }
         PlotTravel.enter(player, plot, pocket)
         return InteractionResult.CONSUME
+    }
+
+    /** Dyes the placed backpack, mixing with its current colour like armor. Other items fall through to the normal click. */
+    override fun useItemOn(
+        stack: ItemStack, state: BlockState, level: Level, pos: BlockPos, player: Player, hand: InteractionHand, hit: BlockHitResult
+    ): ItemInteractionResult {
+        val dye = stack.item as? DyeItem ?: return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION
+        val be = level.getBlockEntity(pos) as? BackpackBlockEntity ?: return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION
+        if (level.isClientSide) return ItemInteractionResult.SUCCESS
+
+        val current = ItemStack(this)
+        be.color?.let { current.set(DataComponents.DYED_COLOR, DyedItemColor(it, true)) }
+        be.color = DyedItemColor.applyDyes(current, listOf(dye)).get(DataComponents.DYED_COLOR)?.rgb
+        be.setChanged()
+        level.sendBlockUpdated(pos, state, state, 3)
+        if (level is ServerLevel) {
+            PlotManager.getPocketLevel(level.server)?.let { pocket ->
+                val manager = PlotManager.get(pocket)
+                manager.get(be.plotId)?.let { manager.setColor(it, be.color, pocket) }
+            }
+        }
+        if (!player.abilities.instabuild) stack.shrink(1)
+        return ItemInteractionResult.CONSUME
+    }
+
+    /** Breaking gives the backpack straight to the player; it only drops in the world if their inventory is full. */
+    override fun playerDestroy(
+        level: Level, player: Player, pos: BlockPos, state: BlockState, blockEntity: BlockEntity?, tool: ItemStack
+    ) {
+        val be = blockEntity as? BackpackBlockEntity
+        if (be == null || level.isClientSide) return super.playerDestroy(level, player, pos, state, blockEntity, tool)
+        val stack = ItemStack(this)
+        if (be.plotId != 0) stack.set(ModComponents.PLOT_ID.get(), be.plotId)
+        be.color?.let { stack.set(DataComponents.DYED_COLOR, DyedItemColor(it, true)) }
+        player.awardStat(Stats.BLOCK_MINED.get(this))
+        player.causeFoodExhaustion(0.005f)
+        if (!player.inventory.add(stack)) popResource(level, pos, stack)
     }
 
     override fun getDrops(state: BlockState, params: LootParams.Builder): MutableList<ItemStack> {

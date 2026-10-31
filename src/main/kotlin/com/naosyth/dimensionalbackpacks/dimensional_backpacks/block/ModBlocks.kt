@@ -14,16 +14,15 @@ object ModBlocks {
 
     private fun unbreakable() = BlockBehaviour.Properties.of().strength(-1.0f, 3600000.0f).noLootTable().lightLevel { 15 }
 
-    // Hotspots are per-face block states of the wall.
     val PLOT_WALL = REGISTRY.register("plot_wall", Supplier { PlotWallBlock(unbreakable()) })
 
-    // Breakable look-alike for building inside a backpack. It never carries hotspots.
+    // Breakable look-alike for building inside a backpack.
     val DECORATIVE_WALL = REGISTRY.register("decorative_wall", Supplier {
         DecorativeWallBlock(BlockBehaviour.Properties.of().strength(1.5f, 6.0f).sound(SoundType.WOOL))
     })
 
     private fun backpackProperties() = BlockBehaviour.Properties.of()
-        .strength(2.0f)
+        .strength(0.0f)
         .sound(SoundType.WOOL)
         .noOcclusion()
         .pushReaction(PushReaction.BLOCK)

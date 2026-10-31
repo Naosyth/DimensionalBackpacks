@@ -1,11 +1,11 @@
 package com.naosyth.dimensionalbackpacks.dimensional_backpacks.client
 
 import com.mojang.blaze3d.platform.InputConstants
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.client.storage.StorageScreen
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.network.StorageOpenPayload
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.network.StorageSyncPayload
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.storage.ModMenus
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.network.ExitPayload
-import com.naosyth.dimensionalbackpacks.dimensional_backpacks.network.HotspotMenuPayload
-import com.naosyth.dimensionalbackpacks.dimensional_backpacks.network.HotspotMenuRequestPayload
-import com.naosyth.dimensionalbackpacks.dimensional_backpacks.network.HotspotUsePayload
-import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.HotspotUse
 import net.minecraft.client.KeyMapping
 import net.minecraft.client.player.AbstractClientPlayer
 import net.minecraft.client.renderer.entity.player.PlayerRenderer
@@ -31,19 +31,6 @@ import thedarkcolour.kotlinforforge.neoforge.forge.MOD_BUS
 
 /** Client-only setup. Only touched from the client, so it may reference client classes. */
 object ClientInit {
-    /** Ticks the key must be held before the hotspot menu opens instead of using the primary hotspot. */
-    private const val HOLD_TICKS = 6
-
-    private val hotspotKey = KeyMapping(
-        "key.dimensional_backpacks.hotspot",
-        InputConstants.Type.KEYSYM,
-        GLFW.GLFW_KEY_Z,
-        "key.categories.dimensional_backpacks"
-    )
-
-    // Ticks the key has been held; 0 when idle.
-    private var held = 0
-
     private val exitKey = KeyMapping(
         "key.dimensional_backpacks.exit",
         InputConstants.Type.KEYSYM,
@@ -53,8 +40,11 @@ object ClientInit {
 
     fun init() {
         MOD_BUS.addListener<RegisterKeyMappingsEvent> {
-            it.register(hotspotKey)
             it.register(exitKey)
+            it.register(storageKey)
+        }
+        MOD_BUS.addListener<net.neoforged.neoforge.client.event.RegisterMenuScreensEvent> {
+            it.register(ModMenus.STORAGE.get(), ::StorageScreen)
         }
         MOD_BUS.addListener<EntityRenderersEvent.AddLayers> { event ->
             for (skin in listOf(PlayerSkin.Model.WIDE, PlayerSkin.Model.SLIM)) {
@@ -100,11 +90,11 @@ object ClientInit {
         NeoForge.EVENT_BUS.addListener<ClientTickEvent.Post> { tick() }
     }
 
-    /** Colour of an undyed backpack. White leaves the model's textures exactly as painted. */
+    /** Color of an undyed backpack. White leaves the model's textures exactly as painted. */
     const val DEFAULT_DYE = 0xFFFFFF
 
-    /** How much of the dye colour shows through; 1.0 is the full dye, lower values wash it toward white. */
-    private const val DYE_STRENGTH = 0.80f
+    /** How much of the dye color shows through; 1.0 is the full dye, lower values wash it toward white. */
+    private const val DYE_STRENGTH = 1.0f
 
     private fun soften(rgb: Int): Int {
         fun channel(shift: Int): Int {
@@ -121,29 +111,22 @@ object ClientInit {
         }
     }
 
-    private fun tick() {
-        val mc = Minecraft.getInstance()
-        if (mc.player == null || mc.screen != null) {
-            held = 0
-            return
-        }
-        // The server ignores this outside a backpack.
-        while (exitKey.consumeClick()) PacketDistributor.sendToServer(ExitPayload)
-        if (hotspotKey.isDown) {
-            held++
-            if (held == HOLD_TICKS) PacketDistributor.sendToServer(HotspotMenuRequestPayload)
-        } else {
-            // A release before the hold threshold is a tap.
-            if (held in 1 until HOLD_TICKS) PacketDistributor.sendToServer(HotspotUsePayload(HotspotUse.PRIMARY))
-            held = 0
-        }
+    fun onStorageSync(payload: StorageSyncPayload) {
+        (Minecraft.getInstance().screen as? StorageScreen)?.update(payload)
     }
 
-    fun openHotspotMenu(entries: List<HotspotMenuPayload.Entry>) {
+    val storageKey = KeyMapping(
+        "key.dimensional_backpacks.storage",
+        InputConstants.Type.KEYSYM,
+        GLFW.GLFW_KEY_B,
+        "key.categories.dimensional_backpacks"
+    )
+
+    private fun tick() {
         val mc = Minecraft.getInstance()
-        if (mc.screen != null || entries.isEmpty()) return
-        // The key was already released while the server was answering; nothing to pick.
-        if (!InputConstants.isKeyDown(mc.window.window, hotspotKey.key.value)) return
-        mc.setScreen(HotspotMenuScreen(entries, hotspotKey))
+        if (mc.player == null || mc.screen != null) return
+        while (storageKey.consumeClick()) PacketDistributor.sendToServer(StorageOpenPayload)
+        // The server ignores this outside a backpack.
+        while (exitKey.consumeClick()) PacketDistributor.sendToServer(ExitPayload)
     }
 }

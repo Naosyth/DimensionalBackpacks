@@ -1,8 +1,8 @@
 # Dimensional Backpacks
 
-Build a room inside your backpack, then wear it and use the blocks in it without going in.
+Build a room inside your backpack, then wear it and use all of its storage from one screen.
 
-Each backpack holds its own pocket-dimension interior. Place a backpack and right-click it to step inside, build whatever you like, then pick it up and wear it. Hotspots on the interior walls let you right-click the block touching them from anywhere, so a chest, furnace or crafting table in your backpack is a keypress away.
+Each backpack holds its own pocket-dimension interior. Place a backpack and sneak + right-click it to step inside, build whatever you like, then pick it up and wear it. Every chest, barrel or other item-storage block in the room is combined into one searchable list, so you can reach everything with a keypress, without going in.
 
 Minecraft 1.21.1, NeoForge 21.1.x. Requires [Kotlin for Forge](https://modrinth.com/mod/kotlin-for-forge). [Curios](https://modrinth.com/mod/curios) is optional, and adds a back slot for the worn backpack.
 
@@ -10,20 +10,18 @@ Minecraft 1.21.1, NeoForge 21.1.x. Requires [Kotlin for Forge](https://modrinth.
 
 - **Three tiers** of backpack, each with a bigger, differently shaped interior.
 - **Placeable:** put a backpack down so others can walk in too.
-- **Plots are permanent.** An interior is never deleted, and a copied backpack points at the same interior.
-- **Hotspots:** place a hotspot on an interior wall block to use whatever block touches it, as if you stood there and right-clicked it. A wall block can hold a hotspot on each side, and higher tiers allow more.
-- **Dyeable:** dye a backpack to tint its interior walls. A dyed backpack in a crafting grid by itself gives an undyed copy that keeps its interior.
-- **Decorative wall blocks** for building inside, which don't take hotspots. Craft them with a dye to colour them.
+- **Storage screen:** all item storage in the backpack shown as one list, with search, a sort button that cycles name/amount order, and a built-in crafting grid that refills from storage. Up to nine nameable storage groups (tabs along the top) each aggregate their own set of storages; use the gear to name a group, choose which storages belong to it and drag them into priority order. Buttons above the crafting grid deposit your inventory, or only items the group already holds.
+- **Copying:** craft a linked backpack with a blank one of the same tier to get another backpack linked to the same interior (the original is kept).
+- **Dyeable:** dye a backpack, and the color of the interior changes to match.
 
 ## Controls
 
 | Key | Action |
 | --- | --- |
-| `Z` (tap) | Use the primary hotspot |
-| `Z` (hold) | Open a menu to pick a hotspot |
+| `B` | Open the storage screen of the backpack you're wearing (right-clicking a placed backpack also works) |
 | `X` | Leave the backpack you're inside (the zipper item also works) |
 
-Both keys can be rebound. To change the primary hotspot, right-click a hotspot with an empty hand.
+Both keys can be rebound.
 
 ## Commands
 
@@ -36,27 +34,20 @@ Requires operator permissions.
 
 `config/dimensional_backpacks-common.toml`:
 
-- `hotspots.tier1` to `tier3`: hotspots per tier (0 to 3). 0 turns hotspots off for that tier.
 - `allowed_blocks.placement`: which blocks can be placed inside backpacks.
-- `allowed_blocks.hotspot`: which blocks work through hotspots.
+- `allow_backpack_copying`: whether backpacks can be copied by crafting (default `true`).
 
-Each list has a `mode` (`WHITELIST` or `BLACKLIST`) and a `blocks` list. Entries can be a block (`minecraft:chest`), a whole mod (`minecraft` or `minecraft:*`) or a tag (`#minecraft:logs`).
+The list has a `mode` (`WHITELIST` or `BLACKLIST`) and a `blocks` list. Entries can be a block (`minecraft:chest`), a whole mod (`minecraft` or `minecraft:*`) or a tag (`#minecraft:logs`).
 
 ## Mod compatibility
 
-Hotspots default to a whitelist of vanilla (`minecraft`) and Refined Storage. Many mods open their menus in ways that only work when the block is nearby, and they either fail or crash when used from a hotspot. AE2, Mekanism, Tom's Storage and Sophisticated Storage are known not to work. Add a mod to the hotspot whitelist only after testing it.
+Any block that exposes the standard item handler capability is picked up by the storage screen, so most storage mods work without special support.
 
-### For mod authors
+## Resource packs
 
-If your block's menu rejects the player because they're in another dimension or out of reach, you can allow hotspot use:
+Backpack block models can be replaced at `assets/dimensional_backpacks/models/backpack_tier_1.json` through `backpack_tier_3.json`. The item models inherit those same models, so a replacement changes the placed, held and worn backpack appearance. Backpack model textures are stitched into Minecraft's block atlas: put them under `assets/dimensional_backpacks/textures/block/` and reference them as `dimensional_backpacks:block/<texture_name>` in the model.
 
-```kotlin
-if (HotspotApi.isUsingHotspot(player, pos)) return true
-```
-
-`HotspotApi.isUsingHotspot(player, pos)` is true while a hotspot is using the block at `pos`, and while a menu opened that way stays open. Server side only. A cancellable `HotspotUseEvent` is also posted on the NeoForge event bus before each hotspot use.
-
-Note that this doesn't help menus that look the block up on the client, since the client doesn't have the pocket dimension loaded.
+The storage screen uses `assets/dimensional_backpacks/textures/gui/storage.png`, a 256x96 texture atlas. It is split into 16x16 sprites. At y=0, the sprites starting at x=0, 16, 32, 48 and 64 are the panel, inset, dark inset, active inset and hovered inset; x=80 and 96 are the button and hovered button; x=128 and 144 are the enabled and disabled toggle. At y=32, x=0, 16, 32, 48, 64, 80 and 96 are the add, search, settings, sort-up, sort-down, drag-grip and crafting-arrow icons. Panels and controls are nine-sliced from their 16x16 sprite, so their 4-pixel corners stay crisp at different screen sizes. The 18x18 slot sprite is at x=0, y=64. Replace this mod-owned atlas to theme the storage screen without changing vanilla inventory slots; standard Minecraft item icons remain individually replaceable through their item models and textures.
 
 ## Building
 

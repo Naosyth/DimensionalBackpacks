@@ -77,8 +77,6 @@ class PlotLayout(
 enum class Tier {
     TIER_1, TIER_2, TIER_3;
 
-    val maxHotspots: Int get() = ModConfig.maxHotspots(this)
-
     /** Registry name of this tier's backpack block and item. */
     val registryName: String get() = "backpack_tier_${ordinal + 1}"
     val layout: PlotLayout by lazy { PlotLayout.load(this) }

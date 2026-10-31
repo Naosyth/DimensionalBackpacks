@@ -2,7 +2,6 @@ package com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot
 
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.DimensionalBackpacks
 import net.minecraft.core.BlockPos
-import net.minecraft.core.Direction
 import net.minecraft.core.HolderLookup
 import net.minecraft.core.registries.Registries
 import net.minecraft.nbt.CompoundTag
@@ -33,33 +32,9 @@ class PlotManager : SavedData() {
         for (player in pocket.players()) PlotColorSync.send(player, plot)
     }
 
-    fun hasFreeHotspotSlot(plot: Plot): Boolean = (0 until plot.tier.maxHotspots).any { it !in plot.hotspots }
-
-    /** Registers a hotspot in the lowest free slot, or returns null if the tier's limit is reached. */
-    fun addHotspot(plot: Plot, pos: BlockPos, face: Direction): Int? {
-        val slot = (0 until plot.tier.maxHotspots).firstOrNull { it !in plot.hotspots } ?: return null
-        plot.hotspots[slot] = Hotspot(pos.immutable(), face)
-        setDirty()
-        return slot
-    }
-
-    fun setPrimary(plot: Plot, pos: BlockPos, face: Direction) {
-        val slot = plot.hotspots.entries.firstOrNull { it.value == Hotspot(pos, face) }?.key ?: return
-        plot.primary = slot
-        setDirty()
-    }
-
     fun setSpawn(plot: Plot, spawn: Spawn) {
         plot.customSpawn = spawn
         setDirty()
-    }
-
-    fun removeHotspot(plot: Plot, pos: BlockPos, face: Direction) {
-        if (plot.hotspots.values.removeIf { it == Hotspot(pos, face) }) setDirty()
-    }
-
-    fun removeHotspotsAt(plot: Plot, pos: BlockPos) {
-        if (plot.hotspots.values.removeIf { it.pos == pos }) setDirty()
     }
 
     /** Allocates a new plot in the next free grid cell. Cell index equals id - 1, so cells are never reused. */
@@ -78,7 +53,6 @@ class PlotManager : SavedData() {
             entry.putInt("id", plot.id)
             entry.putInt("cell", plot.cell)
             entry.putInt("tier", plot.tier.ordinal)
-            entry.putInt("primary", plot.primary)
             plot.color?.let { entry.putInt("color", it) }
             plot.customSpawn?.let {
                 val spawn = CompoundTag()
@@ -89,15 +63,21 @@ class PlotManager : SavedData() {
                 spawn.putFloat("pitch", it.pitch)
                 entry.put("spawnPoint", spawn)
             }
-            val hotspots = ListTag()
-            for ((slot, hotspot) in plot.hotspots) {
-                val tag = CompoundTag()
-                tag.putInt("slot", slot)
-                tag.putLong("pos", hotspot.pos.asLong())
-                tag.putInt("face", hotspot.face.get3DDataValue())
-                hotspots.add(tag)
+            val groups = ListTag()
+            for (group in plot.groups) {
+                val storages = ListTag()
+                for (pos in group.order) {
+                    val tag = CompoundTag()
+                    tag.putLong("pos", pos.asLong())
+                    tag.putBoolean("enabled", pos in group.enabled)
+                    storages.add(tag)
+                }
+                val groupTag = CompoundTag()
+                groupTag.put("storages", storages)
+                groupTag.putString("name", group.name)
+                groups.add(groupTag)
             }
-            entry.put("hotspots", hotspots)
+            entry.put("groups", groups)
             list.add(entry)
         }
         tag.put("plots", list)
@@ -123,19 +103,22 @@ class PlotManager : SavedData() {
             for (i in 0 until list.size) {
                 val entry = list.getCompound(i)
                 val plot = Plot(entry.getInt("id"), entry.getInt("cell"), Tier.fromOrdinal(entry.getInt("tier")))
-                plot.primary = if (entry.contains("primary")) entry.getInt("primary") else -1
                 if (entry.contains("color")) plot.color = entry.getInt("color")
                 if (entry.contains("spawnPoint")) {
                     val s = entry.getCompound("spawnPoint")
                     plot.customSpawn = Spawn(s.getDouble("x"), s.getDouble("y"), s.getDouble("z"), s.getFloat("yaw"), s.getFloat("pitch"))
                 }
-                val hotspots = entry.getList("hotspots", Tag.TAG_COMPOUND.toInt())
-                for (j in 0 until hotspots.size) {
-                    val hotspot = hotspots.getCompound(j)
-                    // Hotspots saved before faces were block states have no face and are dropped.
-                    if (!hotspot.contains("face")) continue
-                    plot.hotspots[hotspot.getInt("slot")] =
-                        Hotspot(BlockPos.of(hotspot.getLong("pos")), Direction.from3DDataValue(hotspot.getInt("face")))
+                val groups = entry.getList("groups", Tag.TAG_COMPOUND.toInt())
+                for (g in 0 until groups.size) {
+                    val group = StorageGroup(name = groups.getCompound(g).getString("name"))
+                    val storages = groups.getCompound(g).getList("storages", Tag.TAG_COMPOUND.toInt())
+                    for (j in 0 until storages.size) {
+                        val storage = storages.getCompound(j)
+                        val pos = BlockPos.of(storage.getLong("pos"))
+                        group.order.add(pos)
+                        if (storage.getBoolean("enabled")) group.enabled.add(pos)
+                    }
+                    plot.groups.add(group)
                 }
                 manager.plots[plot.id] = plot
             }

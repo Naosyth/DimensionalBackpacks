@@ -1,17 +1,11 @@
 package com.naosyth.dimensionalbackpacks.dimensional_backpacks.config
 
-import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.Tier
 import net.minecraft.world.level.block.state.BlockState
 import net.neoforged.neoforge.common.ModConfigSpec
 
 /** Server-side settings, in `config/dimensional_backpacks-common.toml`. */
 object ModConfig {
-    /** Highest hotspot count a tier may be configured with. */
-    const val MAX_HOTSPOTS = 8
-
     private val builder = ModConfigSpec.Builder()
-
-    private val hotspotCounts: Map<Tier, ModConfigSpec.IntValue>
 
     enum class ListMode { WHITELIST, BLACKLIST }
 
@@ -35,28 +29,14 @@ object ModConfig {
     }
 
     private val placementRule: BlockRule
-    private val hotspotRule: BlockRule
 
     init {
-        builder.comment("How many hotspots each backpack tier supports. 0 disables hotspots for that tier.")
-            .push("hotspots")
-        hotspotCounts = Tier.entries.associateWith { tier ->
-            builder.defineInRange("tier${tier.ordinal + 1}", tier.ordinal + 1, 0, MAX_HOTSPOTS)
-        }
-        builder.pop()
-
         val formats = "Entries: \"modid:block\" for one block, \"modid:*\" for a whole mod, \"#modid:tag\" for a block tag."
-        builder.comment("Which blocks may be placed in a backpack, and which can be used through hotspots.")
+        builder.comment("Which blocks may be placed in a backpack.")
             .push("allowed_blocks")
         placementRule = defineRule(
             "placement", "Blocks that can be placed inside a backpack.",
             ListMode.BLACKLIST, emptyList(), formats
-        )
-        hotspotRule = defineRule(
-            "hotspot",
-            "Blocks that can be used through a hotspot. Many mods' menus need the block nearby or loaded on the client, " +
-                "and fail or crash from a hotspot, so only whitelist mods you've tested.",
-            ListMode.WHITELIST, listOf("minecraft", "refinedstorage"), formats
         )
         builder.pop()
     }
@@ -73,11 +53,13 @@ object ModConfig {
         return BlockRule(modeValue, list)
     }
 
+    private val copyingEnabled = builder
+        .comment("Whether crafting a linked backpack with a blank one of the same tier makes another backpack linked to the same interior.")
+        .define("allow_backpack_copying", true)
+
     val SPEC: ModConfigSpec = builder.build()
 
-    fun maxHotspots(tier: Tier): Int = hotspotCounts.getValue(tier).get()
+    fun isCopyingEnabled(): Boolean = !SPEC.isLoaded || copyingEnabled.get()
 
     fun isPlacementBlocked(state: BlockState): Boolean = !placementRule.allows(state)
-
-    fun isHotspotBlocked(state: BlockState): Boolean = !hotspotRule.allows(state)
 }

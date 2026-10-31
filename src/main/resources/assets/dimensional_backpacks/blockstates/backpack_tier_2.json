@@ -1,8 +1,8 @@
 {
   "variants": {
-    "facing=north": { "model": "dimensional_backpacks:block/backpack_tier_2" },
-    "facing=east": { "model": "dimensional_backpacks:block/backpack_tier_2", "y": 90 },
-    "facing=south": { "model": "dimensional_backpacks:block/backpack_tier_2", "y": 180 },
-    "facing=west": { "model": "dimensional_backpacks:block/backpack_tier_2", "y": 270 }
+    "facing=north": { "model": "dimensional_backpacks:backpack_tier_2" },
+    "facing=east": { "model": "dimensional_backpacks:backpack_tier_2", "y": 90 },
+    "facing=south": { "model": "dimensional_backpacks:backpack_tier_2", "y": 180 },
+    "facing=west": { "model": "dimensional_backpacks:backpack_tier_2", "y": 270 }
   }
 }

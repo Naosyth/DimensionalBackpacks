@@ -14,7 +14,6 @@ object ModItems {
 
     val PLOT_WALL = REGISTRY.registerSimpleBlockItem("plot_wall", ModBlocks.PLOT_WALL)
     val DECORATIVE_WALL = REGISTRY.registerSimpleBlockItem("decorative_wall", ModBlocks.DECORATIVE_WALL)
-    val HOTSPOT = REGISTRY.register("hotspot", Supplier { HotspotItem(Item.Properties()) })
     val ZIPPER = REGISTRY.register("dimensional_zipper", Supplier { ZipperItem(Item.Properties().stacksTo(1)) })
 
     val BACKPACKS: Map<Tier, DeferredItem<BackpackItem>> = Tier.entries.associateWith { tier ->
