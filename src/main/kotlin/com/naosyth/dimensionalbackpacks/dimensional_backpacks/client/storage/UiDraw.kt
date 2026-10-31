@@ -28,6 +28,7 @@ internal object UiDraw {
     private val BUTTON_DISABLED_SPRITE = ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/button_disabled")
 
     private val STORAGE_ROW_SPRITE = ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/storage_row")
+    private val STORAGE_ROW_HOVER_SPRITE = ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/storage_row_hover")
     private val STORAGE_ROW_DISABLED_SPRITE = ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/storage_row_disabled")
 
     enum class IconType {
@@ -42,7 +43,8 @@ internal object UiDraw {
         SORT_AZ,
         SORT_ZA,
         SORT_09,
-        SORT_90
+        SORT_90,
+        ENTER_BACKPACK
     }
 
     private val ICON_MAP = mapOf(
@@ -57,7 +59,8 @@ internal object UiDraw {
         IconType.SORT_AZ to ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/sort_alpha_asc"),
         IconType.SORT_ZA to ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/sort_alpha_desc"),
         IconType.SORT_09 to ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/sort_number_asc"),
-        IconType.SORT_90 to ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/sort_number_desc")
+        IconType.SORT_90 to ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/sort_number_desc"),
+        IconType.ENTER_BACKPACK to ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/enter_backpack")
     )
 
     const val ACCENT = 0xFFFFC107.toInt()
@@ -114,8 +117,19 @@ internal object UiDraw {
         g.blitSprite(sprite, r.x, r.y, r.w, r.h)
     }
 
-    fun storageRow(g: GuiGraphics, r: Rect, enabled: Boolean) {
-        g.blitSprite(if (enabled) STORAGE_ROW_SPRITE else STORAGE_ROW_DISABLED_SPRITE, r.x, r.y, r.w, r.h)
+    enum class StorageRowVariant {
+        NORMAL,
+        HOVER,
+        DISABLED
+    }
+
+    fun storageRow(g: GuiGraphics, r: Rect, variant: StorageRowVariant = StorageRowVariant.NORMAL) {
+        val sprite = when (variant) {
+            StorageRowVariant.NORMAL -> STORAGE_ROW_SPRITE
+            StorageRowVariant.HOVER -> STORAGE_ROW_HOVER_SPRITE
+            StorageRowVariant.DISABLED -> STORAGE_ROW_DISABLED_SPRITE
+        }
+        g.blitSprite(sprite, r.x, r.y, r.w, r.h)
         icon(g, IconType.GRIP, Rect(r.x, r.y + 2, 16, 16))
     }
 
@@ -130,12 +144,12 @@ internal object UiDraw {
 
     fun icon(g: GuiGraphics, icon: IconType, r: Rect, size: Int = 16) = icon(g, icon, r.centerX, r.centerY, size)
 
-    fun text(g: GuiGraphics, text: String, x: Int, y: Int, color: Int = TEXT) {
-        g.drawString(font, text, x, y, color, false)
+    fun text(g: GuiGraphics, text: String, x: Int, y: Int, color: Int = TEXT, shadow: Boolean = false) {
+        g.drawString(font, text, x, y, color, shadow)
     }
 
-    fun centeredText(g: GuiGraphics, text: String, r: Rect, color: Int = TEXT) {
-        g.drawString(font, text, r.centerX - font.width(text) / 2, r.centerY - 4, color, false)
+    fun centeredText(g: GuiGraphics, text: String, r: Rect, color: Int = TEXT, shadow: Boolean = false) {
+        g.drawString(font, text, r.centerX - font.width(text) / 2, r.centerY - 4, color, shadow)
     }
 
     /** A small number in the bottom-right corner of the 16x16 item at [x], [y], drawn above the item. */

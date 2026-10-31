@@ -11,6 +11,7 @@ import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.PlotLoader
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.PlotManager
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.PlotTravel
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.StorageGroup
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.Tier
 import net.minecraft.core.GlobalPos
 import net.minecraft.network.chat.Component
 import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket

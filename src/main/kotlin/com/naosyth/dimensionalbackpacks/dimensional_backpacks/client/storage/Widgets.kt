@@ -3,7 +3,7 @@ package com.naosyth.dimensionalbackpacks.dimensional_backpacks.client.storage
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.network.chat.Component
 
-/** A clickable button. An [active] button is drawn pressed, with a gold frame. */
+/** A clickable button. */
 internal class Button(
     private val area: Rect,
     private val icon: (GuiGraphics, Rect) -> Unit,
@@ -30,4 +30,17 @@ internal class Button(
         onClick()
         return true
     }
+}
+
+internal class FullnessBar(
+    private val area: Rect,
+    private val used: () -> Int,
+    private val total: () -> Int,
+    private val tooltip: () -> List<Component>? = { null }
+) : View {
+    override fun render(g: GuiGraphics, mx: Int, my: Int) {
+        UiDraw.fullnessBar(g, area, used(), total())
+    }
+
+    override fun tooltip(mx: Int, my: Int) = if (area.contains(mx, my)) tooltip() else null
 }

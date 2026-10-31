@@ -53,8 +53,8 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
         val config = Rect(x, y, STORAGE_W, GRID_Y + rows * CELL + PAD)
 
         // A floating panel beside the screen, only used for placed backpacks.
-        val enterPanel = Rect(storage.right + PANEL_GAP, y, ENTER_W, TOOLBAR_H + 2 * PAD)
-        val enterButton = Rect(enterPanel.x + PAD, enterPanel.y + PAD, ENTER_W - 2 * PAD, TOOLBAR_H)
+        val enterPanel = Rect(storage.right + PANEL_GAP, y, ENTER_W + 2 * PAD, ENTER_W + 2 * PAD)
+        val enterButton = Rect(enterPanel.x + PAD, enterPanel.y + PAD, ENTER_W, ENTER_W)
 
         val depositAll = Rect(crafting.x + PAD, crafting.y + PAD, DEPOSIT_W, DEPOSIT_H)
         val depositMatching = Rect(crafting.right - PAD - DEPOSIT_W, crafting.y + PAD, DEPOSIT_W, DEPOSIT_H)
@@ -64,7 +64,7 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
         val craftArrow = Rect(craftGrid.right + 4, craftGrid.centerY - 5, 14, 10)
         val resultSlot = Rect(craftGrid.right + 22, craftGrid.centerY - CELL / 2, CELL, CELL)
 
-        val sort = Rect(toolbar.right - SORT_W, toolbar.y, SORT_W, TOOLBAR_H)
+        val sort = Rect(toolbar.right - TOOLBAR_H, toolbar.y, TOOLBAR_H, TOOLBAR_H)
         val search = Rect(toolbar.x, toolbar.y, sort.x - 4 - toolbar.x, 15)
         val fullnessBar = Rect(toolbar.x, toolbar.y + 17, sort.x - 4 - toolbar.x, TOOLBAR_H - 17)
 
@@ -87,10 +87,9 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
             const val BOTTOM_H = 90
             const val PANEL_GAP = 2
             const val CRAFT_W = 3 * CELL + 22 + CELL
-            const val SORT_W = 20
             const val DELETE_W = 20
             const val DEPOSIT_W = 51
-            const val ENTER_W = 104
+            const val ENTER_W = 24
             const val CRAFT_Y = 27
             const val MIN_ROWS = 3
             const val MAX_ROWS = 12
@@ -132,15 +131,17 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
             layout.gridTrack, model, actions
         )
 
-        val enter = Button(layout.enterButton, { g, r -> UiDraw.centeredText(g, "Enter Backpack", r, 0xFFFFFFFF.toInt()) },
+        val enter = Button(layout.enterButton, { g, r -> UiDraw.icon(g, UiDraw.IconType.ENTER_BACKPACK, r) },
             { listOf(Component.literal("Step inside this backpack")) },
             visible = { menu.placed }) { actions.enterBackpack() }
 
-        mainViews = listOf(groupBar, gear, enter, sortButton(), depositButton(layout.depositAll, "All", "Deposit inventory",
+        val fullnessBar = createFullnessBar()
+
+        mainViews = listOf(groupBar, gear, enter, sortButton(), fullnessBar, depositButton(layout.depositAll, "All", "Deposit inventory",
             "Moves everything from your inventory into this group.", false),
             depositButton(layout.depositMatching, "Matching", "Deposit matching",
                 "Moves items from your inventory that this group already holds.", true), grid)
-        configViews = listOf(groupBar, gear, enter,
+        configViews = listOf(groupBar, gear, enter, fullnessBar,
             Button(layout.deleteGroup, { g, r -> UiDraw.icon(g, UiDraw.IconType.TRASH, r) },
                 { listOf(Component.literal("Delete this group")) },
                 visible = { model.groups.size > 1 }) { actions.removeGroup() },
@@ -150,6 +151,13 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
     }
 
     private var selectedGroupListeners: List<() -> Unit> = emptyList()
+
+    private fun createFullnessBar() = FullnessBar(layout.fullnessBar, { model.usedSlots }, { model.totalSlots }) {
+        listOf(
+            Component.literal("Storage Capacity"),
+            Component.literal("${model.usedSlots} / ${model.totalSlots} slots").withStyle(ChatFormatting.GRAY)
+        )
+    }
 
     private fun createSearchBox() = EditBox(font, layout.search.x + 4, layout.search.y + 3, layout.search.w - SEARCH_ICON_W - 5, layout.search.h,
         Component.literal("Search")).apply {
@@ -184,7 +192,7 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
                 StoragePrefs.ascending -> UiDraw.IconType.SORT_09
                 else -> UiDraw.IconType.SORT_90
             }
-            UiDraw.icon(g, iconType, r.centerX, r.centerY, 14)
+            UiDraw.icon(g, iconType, r.centerX, r.centerY)
         },
         {
             val name = when {
@@ -214,7 +222,7 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
     private fun depositButton(area: Rect, label: String, title: String, detail: String, matchingOnly: Boolean) = Button(
         area,
         { g, r ->
-            UiDraw.centeredText(g, label, r, 0xFFFFFFFF.toInt())
+            UiDraw.centeredText(g, label, r, 0xFFFFFFFF.toInt(), true)
         },
         { listOf(Component.literal(title), Component.literal(detail).withStyle(ChatFormatting.GRAY)) }
     ) { actions.deposit(matchingOnly) }
@@ -285,8 +293,7 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
     private fun renderItemsPanel(g: GuiGraphics) {
         UiDraw.panelItems(g, layout.storage)
         UiDraw.inset(g, layout.search)
-        UiDraw.icon(g, UiDraw.IconType.SEARCH, layout.search.x + layout.search.w - SEARCH_ICON_W + 4, layout.search.y + 7)
-        UiDraw.fullnessBar(g, layout.fullnessBar, model.usedSlots, model.totalSlots)
+        UiDraw.icon(g, UiDraw.IconType.SEARCH, layout.search.x + layout.search.w - SEARCH_ICON_W + 4, layout.search.y + 6)
     }
 
     private fun renderCraftingPanel(g: GuiGraphics) {
@@ -312,7 +319,6 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
     private fun renderConfigPanel(g: GuiGraphics) {
         UiDraw.panelConfig(g, layout.config)
         UiDraw.inset(g, layout.nameField)
-        UiDraw.fullnessBar(g, layout.fullnessBar, model.usedSlots, model.totalSlots)
     }
 
     override fun renderLabels(g: GuiGraphics, mx: Int, my: Int) {}

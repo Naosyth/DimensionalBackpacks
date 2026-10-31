@@ -48,15 +48,15 @@ internal class StorageList(
             if (index >= storages.size) break
             val row = rowArea(visible)
             if (dragging && index == pressedIndex) g.fill(row.x, row.y, row.right, row.bottom, 0x40000000)
-            else drawRow(g, storages[index], index, row)
+            else drawRow(g, storages[index], index, row, mx, my)
         }
-        if (dragging) renderDrag(g, my)
+        if (dragging) renderDrag(g, mx, my)
     }
 
     private fun rowArea(visibleIndex: Int) =
         Rect(content.x + 1, content.y + visibleIndex * ROW_H + 1, content.w - 2, ROW_H - 2)
 
-    private fun renderDrag(g: GuiGraphics, my: Int) {
+    private fun renderDrag(g: GuiGraphics, mx:Int, my: Int) {
         val visible = targetIndex(my) - scroll
         if (visible in 0 until visibleRows) {
             val y = content.y + visible * ROW_H + if (targetIndex(my) > pressedIndex) ROW_H - 1 else 0
@@ -65,18 +65,22 @@ internal class StorageList(
         g.pose().pushPose()
         g.pose().translate(0f, 0f, 300f)
         val floating = rowArea(0)
-        drawRow(g, storages[pressedIndex], pressedIndex, Rect(floating.x, my - ROW_H / 2, floating.w, floating.h))
+        drawRow(g, storages[pressedIndex], pressedIndex, Rect(floating.x, my - ROW_H / 2, floating.w, floating.h), mx, my)
         g.pose().popPose()
     }
 
-    private fun drawRow(g: GuiGraphics, info: Info, index: Int, row: Rect) {
-        UiDraw.storageRow(g, row, info.enabled)
+    private fun drawRow(g: GuiGraphics, info: Info, index: Int, row: Rect, mx: Int, my: Int) {
+        val variant = when {
+            row.contains(mx, my) -> UiDraw.StorageRowVariant.HOVER
+            info.enabled -> UiDraw.StorageRowVariant.NORMAL
+            else -> UiDraw.StorageRowVariant.DISABLED
+        }
+        UiDraw.storageRow(g, row, variant)
         g.renderItem(info.icon, row.x + 13, row.y + 2)
         val nameColor = if (info.enabled) 0xFF202020.toInt() else 0xFF606060.toInt()
         val name = UiDraw.font.plainSubstrByWidth(info.icon.hoverName.string, row.w - 88)
         UiDraw.text(g, name, row.x + 33, row.y + 3, nameColor)
         drawFullness(g, info, row)
-        drawToggle(g, info.enabled, toggleArea(row))
     }
 
     private fun drawFullness(g: GuiGraphics, info: Info, row: Rect) {
@@ -94,18 +98,6 @@ internal class StorageList(
         g.fill(barX, row.y + 14, barX + barW, row.y + 17, FULLNESS_TRACK)
         g.fill(barX, row.y + 14, barX + (barW * fullness).roundToInt(), row.y + 17, color)
     }
-
-    private fun drawToggle(g: GuiGraphics, on: Boolean, area: Rect) {
-        if (on) {
-            UiDraw.button(g, area, UiDraw.ButtonVariant.NORMAL)
-            UiDraw.text(g, "ON", area.x + 6, area.y + 3, 0xFFFFFFFF.toInt())
-        } else {
-            UiDraw.button(g, area, UiDraw.ButtonVariant.DISABLED)
-            UiDraw.text(g, "OFF", area.x + 3, area.y + 3, 0x80FFFFFF.toInt())
-        }
-    }
-
-    private fun toggleArea(row: Rect) = Rect(row.right - 31, row.y + 4, 24, 14)
 
     // ---- Input ----
 
@@ -131,28 +123,36 @@ internal class StorageList(
     override fun contentClicked(mx: Int, my: Int, button: Int): Boolean {
         if (button != 0) return false
         val index = indexAt(my) ?: return true
-        val row = rowArea(index - scroll)
-        when {
-            toggleArea(row).contains(mx, my) -> change(index, StorageConfigPayload.TOGGLE)
-            else -> {
-                pressedIndex = index
-                pressY = my
-                dragging = false
-            }
-        }
+
+        // Record the press state; we determine whether it's a click or drag on release
+        pressedIndex = index
+        pressY = my
+        dragging = false
         return true
     }
 
     override fun mouseDragged(mx: Int, my: Int): Boolean {
         if (pressedIndex < 0) return super.mouseDragged(mx, my)
-        if (abs(my - pressY) > DRAG_THRESHOLD) dragging = true
+        if (abs(my - pressY) > DRAG_THRESHOLD) {
+            dragging = true
+        }
         return true
     }
 
     override fun mouseReleased(mx: Int, my: Int): Boolean {
         if (pressedIndex < 0) return super.mouseReleased(mx, my)
+
         val target = targetIndex(my)
-        if (dragging && target != pressedIndex) change(pressedIndex, StorageConfigPayload.MOVE, target)
+        if (dragging) {
+            // If dragged to a different position, perform the reorder move
+            if (target != pressedIndex) {
+                change(pressedIndex, StorageConfigPayload.MOVE, target)
+            }
+        } else {
+            // If it was just a clean click without dragging, toggle anywhere on the row
+            change(pressedIndex, StorageConfigPayload.TOGGLE)
+        }
+
         pressedIndex = -1
         dragging = false
         return true
