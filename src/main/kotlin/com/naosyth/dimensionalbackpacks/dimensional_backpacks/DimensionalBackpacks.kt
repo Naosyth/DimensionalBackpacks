@@ -7,8 +7,12 @@ import com.naosyth.dimensionalbackpacks.dimensional_backpacks.item.BackpackUndye
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.item.BackpackCopyRecipe
 import net.minecraft.core.registries.Registries
 import net.minecraft.network.chat.Component
+import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.item.CreativeModeTab
 import net.minecraft.world.item.ItemStack
+import net.minecraft.server.packs.PackType
+import net.minecraft.server.packs.repository.Pack
+import net.minecraft.server.packs.repository.PackSource
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.command.DebugCommands
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.item.ModItems
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.network.ModNetwork
@@ -25,6 +29,7 @@ import top.theillusivec4.curios.api.event.CurioCanEquipEvent
 import net.neoforged.fml.common.Mod
 import net.neoforged.neoforge.common.NeoForge
 import net.neoforged.neoforge.event.RegisterCommandsEvent
+import net.neoforged.neoforge.event.AddPackFindersEvent
 import net.neoforged.neoforge.registries.DeferredRegister
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
@@ -61,6 +66,16 @@ object DimensionalBackpacks {
             }
         )
         CREATIVE_TABS.register(MOD_BUS)
+        MOD_BUS.addListener<AddPackFindersEvent> { event ->
+            event.addPackFinders(
+                ResourceLocation.fromNamespaceAndPath(ID, "resourcepacks/dbsimple"),
+                PackType.CLIENT_RESOURCES,
+                Component.translatable("resourcePack.dimensional_backpacks.dbsimple"),
+                PackSource.BUILT_IN,
+                false,
+                Pack.Position.TOP
+            )
+        }
         MOD_BUS.addListener<RegisterPayloadHandlersEvent> { ModNetwork.register(it) }
         if (FMLEnvironment.dist == Dist.CLIENT) {
             ClientInit.init()

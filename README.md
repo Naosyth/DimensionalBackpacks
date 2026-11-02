@@ -49,6 +49,8 @@ Backpack block models can be replaced at `assets/dimensional_backpacks/models/ba
 
 The storage screen uses individual GUI sprites under `assets/dimensional_backpacks/textures/gui/sprites/storage/`. Replace these sprite files in a resource pack to theme the mod's panels, buttons, controls, and icons without changing vanilla inventory slots. Standard Minecraft item icons remain individually replaceable through their item models and textures.
 
+The mod jar also includes the optional `DBSimple` resource pack, which provides a simple storage-screen theme. Enable it from the Resource Packs menu.
+
 ## Building
 
 ```
