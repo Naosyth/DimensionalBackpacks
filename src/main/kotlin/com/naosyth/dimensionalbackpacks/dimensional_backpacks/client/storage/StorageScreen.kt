@@ -16,9 +16,9 @@ import net.minecraft.network.chat.Component
 import net.minecraft.sounds.SoundEvents
 import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.inventory.Slot
-import java.lang.Math.random
 import java.util.Optional
 import kotlin.math.sign
+import kotlin.random.Random
 
 /**
  * The backpack's storage screen. Top to bottom: a group bar, a search and sort toolbar, the item grid, and a
@@ -43,6 +43,12 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
     private val views get() = if (configMode) configViews else mainViews
 
     private var query = ""
+
+    init {
+        Minecraft.getInstance().soundManager.play(
+            SimpleSoundInstance.forUI(SoundEvents.BUNDLE_INSERT, 1.0f + (Random.nextFloat() * 0.08f - 0.04f))
+        )
+    }
 
     /** Absolute positions of everything, for a screen of the current size. */
     private class Layout(val x: Int, val y: Int, val rows: Int) {
@@ -152,15 +158,13 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
             list)
         selectedGroupListeners = listOf(list::resetScroll, grid::resetScroll)
         placeSlots()
-
-        Minecraft.getInstance().soundManager.play(SimpleSoundInstance.forUI(SoundEvents.BUNDLE_INSERT, 1.0f + (random().toFloat() * 0.08f - 0.04f)))
     }
 
     override fun removed() {
         super.removed()
 
         Minecraft.getInstance().soundManager.play(
-            SimpleSoundInstance.forUI(SoundEvents.BUNDLE_REMOVE_ONE, 1.0f + (random().toFloat() * 0.08f - 0.04f))
+            SimpleSoundInstance.forUI(SoundEvents.BUNDLE_REMOVE_ONE, 1.0f + (Random.nextFloat() * 0.08f - 0.04f))
         )
     }
 

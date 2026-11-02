@@ -165,6 +165,5 @@ internal class StorageList(
         const val DRAG_THRESHOLD = 3
         const val EDGE = 8
         const val AUTO_SCROLL_MS = 120
-        const val FULLNESS_TRACK = 0xFF202020.toInt()
     }
 }
