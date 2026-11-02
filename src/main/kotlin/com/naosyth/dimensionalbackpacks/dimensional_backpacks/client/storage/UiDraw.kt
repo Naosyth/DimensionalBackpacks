@@ -20,8 +20,8 @@ internal object UiDraw {
 
     private val SLOT_SPRITE = ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/slot")
 
-    private val SEARCH_TRACK_SPRITE = ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/scroller_background")
-    private val SEARCH_THUMB_SPRITE = ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/scroller")
+    private val SCROLL_TRACK_SPRITE = ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/scroller_background")
+    private val SCROLL_THUMB_SPRITE = ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/scroller")
 
     private val BUTTON_SPRITE = ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/button")
     private val BUTTON_HIGHLIGHTED_SPRITE = ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/button_highlighted")
@@ -34,8 +34,6 @@ internal object UiDraw {
     enum class IconType {
         GRIP,
         PLUS,
-        UP,
-        DOWN,
         RIGHT,
         GEAR,
         SEARCH,
@@ -50,8 +48,6 @@ internal object UiDraw {
     private val ICON_MAP = mapOf(
         IconType.GRIP to ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/grip"),
         IconType.PLUS to ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/plus"),
-        IconType.UP to ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/up"),
-        IconType.DOWN to ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/down"),
         IconType.RIGHT to ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/right"),
         IconType.GEAR to ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/gear"),
         IconType.SEARCH to ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/search"),
@@ -94,11 +90,11 @@ internal object UiDraw {
     }
 
     fun scrollTrack(g: GuiGraphics, r: Rect) {
-        g.blitSprite(SEARCH_TRACK_SPRITE, r.x, r.y, r.w, r.h)
+        g.blitSprite(SCROLL_TRACK_SPRITE, r.x, r.y, r.w, r.h)
     }
 
     fun scrollThumb(g: GuiGraphics, r: Rect) {
-        g.blitSprite(SEARCH_THUMB_SPRITE, r.x, r.y, r.w, r.h)
+        g.blitSprite(SCROLL_THUMB_SPRITE, r.x, r.y, r.w, r.h)
     }
 
     enum class ButtonVariant {
@@ -171,8 +167,7 @@ internal object UiDraw {
 
     fun fullnessBar(g: GuiGraphics, r: Rect, used: Int, total: Int) {
         val fullness = if (total == 0) 0f else used.toFloat() / total
-        g.blitSprite(SEARCH_TRACK_SPRITE, r.x, r.y, r.w, r.h)
-        g.fill(r.x, r.y, r.right, r.bottom, 0xFF505050.toInt())
+        g.fill(r.x, r.y, r.right, r.bottom, 0xFF202020.toInt())
         val color = when {
             fullness > 0.9f -> 0xFFD05050.toInt()
             fullness > 0.6f -> 0xFFD0A030.toInt()

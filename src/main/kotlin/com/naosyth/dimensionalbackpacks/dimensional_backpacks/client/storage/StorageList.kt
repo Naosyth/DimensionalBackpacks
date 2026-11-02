@@ -3,8 +3,11 @@ package com.naosyth.dimensionalbackpacks.dimensional_backpacks.client.storage
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.network.StorageConfigPayload
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.network.StorageSyncPayload.Info
 import net.minecraft.ChatFormatting
+import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.resources.sounds.SimpleSoundInstance
 import net.minecraft.network.chat.Component
+import net.minecraft.sounds.SoundEvents
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -71,32 +74,16 @@ internal class StorageList(
 
     private fun drawRow(g: GuiGraphics, info: Info, index: Int, row: Rect, mx: Int, my: Int) {
         val variant = when {
+            !info.enabled -> UiDraw.StorageRowVariant.DISABLED
             row.contains(mx, my) -> UiDraw.StorageRowVariant.HOVER
-            info.enabled -> UiDraw.StorageRowVariant.NORMAL
-            else -> UiDraw.StorageRowVariant.DISABLED
+            else -> UiDraw.StorageRowVariant.NORMAL
         }
         UiDraw.storageRow(g, row, variant)
         g.renderItem(info.icon, row.x + 13, row.y + 2)
-        val nameColor = if (info.enabled) 0xFF202020.toInt() else 0xFF606060.toInt()
+        val nameColor = if (info.enabled) 0xFFFFFFFF.toInt() else 0xFFDDDDDD.toInt()
         val name = UiDraw.font.plainSubstrByWidth(info.icon.hoverName.string, row.w - 88)
-        UiDraw.text(g, name, row.x + 33, row.y + 3, nameColor)
-        drawFullness(g, info, row)
-    }
-
-    private fun drawFullness(g: GuiGraphics, info: Info, row: Rect) {
-        val slotsText = "${info.used}/${info.size} slots"
-        UiDraw.text(g, slotsText, row.x + 33, row.y + 12, 0xFF505050.toInt())
-        val barX = row.x + 33 + UiDraw.font.width(slotsText) + 4
-        val barW = row.w - 32 - (barX - row.x) - 4
-        if (barW <= 6) return
-        val fullness = if (info.size == 0) 0f else info.used.toFloat() / info.size
-        val color = when {
-            fullness > 0.9f -> 0xFFD05050.toInt()
-            fullness > 0.6f -> 0xFFD0A030.toInt()
-            else -> 0xFF50B050.toInt()
-        }
-        g.fill(barX, row.y + 14, barX + barW, row.y + 17, FULLNESS_TRACK)
-        g.fill(barX, row.y + 14, barX + (barW * fullness).roundToInt(), row.y + 17, color)
+        UiDraw.text(g, name, row.x + 33, row.y + 4, nameColor, true)
+        UiDraw.fullnessBar(g, Rect(row.x + 33, row.y + 15, row.w - 37, 3), info.used, info.size)
     }
 
     // ---- Input ----
@@ -151,6 +138,9 @@ internal class StorageList(
         } else {
             // If it was just a clean click without dragging, toggle anywhere on the row
             change(pressedIndex, StorageConfigPayload.TOGGLE)
+            Minecraft.getInstance().soundManager.play(
+                SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.0f, 0.1f)
+            )
         }
 
         pressedIndex = -1
@@ -175,6 +165,6 @@ internal class StorageList(
         const val DRAG_THRESHOLD = 3
         const val EDGE = 8
         const val AUTO_SCROLL_MS = 120
-        const val FULLNESS_TRACK = 0xFF555555.toInt()
+        const val FULLNESS_TRACK = 0xFF202020.toInt()
     }
 }

@@ -1,7 +1,10 @@
 package com.naosyth.dimensionalbackpacks.dimensional_backpacks.client.storage
 
+import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
+import net.minecraft.client.resources.sounds.SimpleSoundInstance
 import net.minecraft.network.chat.Component
+import net.minecraft.sounds.SoundEvents
 
 /** A clickable button. */
 internal class Button(
@@ -28,6 +31,9 @@ internal class Button(
     override fun mouseClicked(mx: Int, my: Int, button: Int): Boolean {
         if (button != 0 || !visible() || !area.contains(mx, my)) return false
         onClick()
+        Minecraft.getInstance().soundManager.play(
+            SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.0f, 0.1f)
+        )
         return true
     }
 }

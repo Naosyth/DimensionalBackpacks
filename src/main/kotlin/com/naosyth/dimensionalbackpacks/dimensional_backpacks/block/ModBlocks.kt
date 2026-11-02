@@ -12,7 +12,7 @@ import java.util.function.Supplier
 object ModBlocks {
     val REGISTRY: DeferredRegister.Blocks = DeferredRegister.createBlocks(DimensionalBackpacks.ID)
 
-    private fun unbreakable() = BlockBehaviour.Properties.of().strength(-1.0f, 3600000.0f).noLootTable().lightLevel { 15 }
+    private fun unbreakable() = BlockBehaviour.Properties.of().strength(-1.0f, 3600000.0f).isRedstoneConductor { _, _, _ -> false }.noLootTable().lightLevel { 15 }
 
     val PLOT_WALL = REGISTRY.register("plot_wall", Supplier { PlotWallBlock(unbreakable()) })
 

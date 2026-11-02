@@ -7,12 +7,16 @@ import com.naosyth.dimensionalbackpacks.dimensional_backpacks.storage.StorageMen
 import com.mojang.blaze3d.platform.InputConstants
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.StorageGroup
 import net.minecraft.ChatFormatting
+import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.EditBox
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
+import net.minecraft.client.resources.sounds.SimpleSoundInstance
 import net.minecraft.network.chat.Component
+import net.minecraft.sounds.SoundEvents
 import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.inventory.Slot
+import java.lang.Math.random
 import java.util.Optional
 import kotlin.math.sign
 
@@ -148,6 +152,16 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
             list)
         selectedGroupListeners = listOf(list::resetScroll, grid::resetScroll)
         placeSlots()
+
+        Minecraft.getInstance().soundManager.play(SimpleSoundInstance.forUI(SoundEvents.BUNDLE_INSERT, 1.0f + (random().toFloat() * 0.08f - 0.04f)))
+    }
+
+    override fun removed() {
+        super.removed()
+
+        Minecraft.getInstance().soundManager.play(
+            SimpleSoundInstance.forUI(SoundEvents.BUNDLE_REMOVE_ONE, 1.0f + (random().toFloat() * 0.08f - 0.04f))
+        )
     }
 
     private var selectedGroupListeners: List<() -> Unit> = emptyList()
