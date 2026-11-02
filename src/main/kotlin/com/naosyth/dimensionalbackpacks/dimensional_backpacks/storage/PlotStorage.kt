@@ -119,9 +119,23 @@ object PlotStorage {
         return result
     }
 
-    /** Inserts [stack] into the top storage that accepts it, and returns what didn't fit. */
-    fun insert(storages: List<Storage>, stack: ItemStack): ItemStack {
+    /**
+     * Inserts [stack] into [storages], and returns what didn't fit. When [fillPartialStacksFirst] is enabled,
+     * matching partial stacks across the whole group are filled before trying other slots in priority order.
+     */
+    fun insert(storages: List<Storage>, stack: ItemStack, fillPartialStacksFirst: Boolean = false): ItemStack {
         var remaining = stack
+        if (fillPartialStacksFirst) {
+            for (storage in storages) {
+                for (slot in 0 until storage.handler.slots) {
+                    if (remaining.isEmpty) return ItemStack.EMPTY
+                    val current = storage.handler.getStackInSlot(slot)
+                    if (current.isEmpty || !ItemStack.isSameItemSameComponents(current, remaining)) continue
+                    if (current.count >= minOf(current.maxStackSize, storage.handler.getSlotLimit(slot))) continue
+                    remaining = storage.handler.insertItem(slot, remaining, false)
+                }
+            }
+        }
         for (storage in storages) {
             if (remaining.isEmpty) continue
             remaining = ItemHandlerHelper.insertItem(storage.handler, remaining, false)

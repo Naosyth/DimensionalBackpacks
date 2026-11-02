@@ -32,10 +32,7 @@ import net.minecraft.world.entity.player.Player
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.BlockGetter
 import net.minecraft.world.level.Level
-import com.google.gson.JsonParser
-import com.naosyth.dimensionalbackpacks.dimensional_backpacks.DimensionalBackpacks
 import net.minecraft.world.phys.shapes.CollisionContext
-import net.minecraft.world.phys.shapes.Shapes
 import net.minecraft.world.phys.shapes.VoxelShape
 import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.EntityBlock
@@ -69,6 +66,10 @@ class BackpackBlock(val tier: Tier, properties: Properties) : Block(properties),
         state.rotate(mirror.getRotation(state.getValue(FACING)))
 
     override fun getShape(
+        state: BlockState, level: BlockGetter, pos: BlockPos, context: CollisionContext
+    ): VoxelShape = shapes.getValue(state.getValue(FACING))
+
+    override fun getCollisionShape(
         state: BlockState, level: BlockGetter, pos: BlockPos, context: CollisionContext
     ): VoxelShape = shapes.getValue(state.getValue(FACING))
 
@@ -169,36 +170,24 @@ class BackpackBlock(val tier: Tier, properties: Properties) : Block(properties),
     companion object {
         val FACING: DirectionProperty = BlockStateProperties.HORIZONTAL_FACING
 
-        private val FULL_CUBE = listOf(doubleArrayOf(0.0, 0.0, 0.0, 16.0, 16.0, 16.0))
-
-        /** Reads each element's from/to out of the tier's block model, so shapes follow Blockbench exports. */
-        private fun loadBoxes(tier: Tier): List<DoubleArray> {
-            val path = "/assets/${DimensionalBackpacks.ID}/models/block/backpack_tier_${tier.ordinal + 1}.json"
-            return try {
-                val stream = BackpackBlock::class.java.getResourceAsStream(path) ?: return FULL_CUBE
-                val root = stream.bufferedReader().use { JsonParser.parseReader(it).asJsonObject }
-                root.getAsJsonArray("elements").map { element ->
-                    val obj = element.asJsonObject
-                    val from = obj.getAsJsonArray("from").map { it.asDouble }
-                    val to = obj.getAsJsonArray("to").map { it.asDouble }
-                    DoubleArray(6) { if (it < 3) from[it] else to[it - 3] }
-                }.ifEmpty { FULL_CUBE }
-            } catch (e: Exception) {
-                DimensionalBackpacks.LOGGER.warn("Could not read the shape of $path, using a full cube", e)
-                FULL_CUBE
-            }
-        }
-
-        // Rotates the north-facing boxes clockwise (seen from above) to match the blockstate's y rotation.
+        // North-facing backpacks sit against the south edge of the block; rotate the dimensions with the facing.
         private fun shapesFor(tier: Tier): Map<Direction, VoxelShape> {
-            val boxes = loadBoxes(tier)
-            fun build(map: (DoubleArray) -> VoxelShape) =
-                boxes.map(map).reduce { a, b -> Shapes.or(a, b) }.optimize()
+            val height = when (tier) {
+                Tier.TIER_1 -> 14.0
+                Tier.TIER_2 -> 15.0
+                Tier.TIER_3 -> 16.0
+            }
+            val depth = when (tier) {
+                Tier.TIER_1 -> 5.0
+                Tier.TIER_2 -> 6.0
+                Tier.TIER_3 -> 8.0
+            }
+            val north = box(2.0, 0.0, 16.0 - depth, 14.0, height, 16.0)
             return mapOf(
-                Direction.NORTH to build { b -> box(b[0], b[1], b[2], b[3], b[4], b[5]) },
-                Direction.EAST to build { b -> box(16 - b[5], b[1], b[0], 16 - b[2], b[4], b[3]) },
-                Direction.SOUTH to build { b -> box(16 - b[3], b[1], 16 - b[5], 16 - b[0], b[4], 16 - b[2]) },
-                Direction.WEST to build { b -> box(b[2], b[1], 16 - b[3], b[5], b[4], 16 - b[0]) }
+                Direction.NORTH to north,
+                Direction.EAST to box(0.0, 0.0, 2.0, depth, height, 14.0),
+                Direction.SOUTH to box(2.0, 0.0, 0.0, 14.0, height, depth),
+                Direction.WEST to box(16.0 - depth, 0.0, 2.0, 16.0, height, 14.0)
             )
         }
 

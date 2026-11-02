@@ -36,8 +36,9 @@ data class StorageClickPayload(val containerId: Int, val template: ItemStack, va
 }
 
 /**
- * Client to server: select, add, remove or rename a storage group. [index] is the group to select for
- * [SELECT]; [name] is the new name of the selected group for [RENAME].
+ * Client to server: select, add, remove or rename a storage group, or toggle whether partial stacks are
+ * filled before priority insertion. [index] is the group to select for [SELECT]; [name] is the new name
+ * of the selected group for [RENAME].
  */
 data class StorageGroupPayload(val containerId: Int, val action: Int, val index: Int = 0, val name: String = "") : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<StorageGroupPayload> = TYPE
@@ -47,6 +48,7 @@ data class StorageGroupPayload(val containerId: Int, val action: Int, val index:
         const val ADD = 1
         const val REMOVE = 2
         const val RENAME = 3
+        const val TOGGLE_FILL_PARTIAL_STACKS_FIRST = 4
 
         val TYPE = CustomPacketPayload.Type<StorageGroupPayload>(id("storage_group"))
         val CODEC: StreamCodec<RegistryFriendlyByteBuf, StorageGroupPayload> = StreamCodec.composite(
@@ -116,7 +118,14 @@ data class StorageSyncPayload(val groups: List<Group>, val selected: Int, val it
      * A group, shown by the block of its top storage ([icon] is empty for a group with none). It has [size]
      * storages with [usedSlots] of [totalSlots] slots occupied.
      */
-    data class Group(val icon: ItemStack, val size: Int, val name: String, val usedSlots: Int, val totalSlots: Int) {
+    data class Group(
+        val icon: ItemStack,
+        val size: Int,
+        val name: String,
+        val usedSlots: Int,
+        val totalSlots: Int,
+        val fillPartialStacksFirst: Boolean
+    ) {
         companion object {
             val CODEC: StreamCodec<RegistryFriendlyByteBuf, Group> = StreamCodec.composite(
                 ItemStack.OPTIONAL_STREAM_CODEC, Group::icon,
@@ -124,6 +133,7 @@ data class StorageSyncPayload(val groups: List<Group>, val selected: Int, val it
                 ByteBufCodecs.stringUtf8(StorageGroup.MAX_NAME), Group::name,
                 ByteBufCodecs.VAR_INT, Group::usedSlots,
                 ByteBufCodecs.VAR_INT, Group::totalSlots,
+                ByteBufCodecs.BOOL, Group::fillPartialStacksFirst,
                 ::Group
             )
         }

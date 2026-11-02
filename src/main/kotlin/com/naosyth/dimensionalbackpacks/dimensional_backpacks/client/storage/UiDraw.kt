@@ -42,7 +42,8 @@ internal object UiDraw {
         SORT_ZA,
         SORT_09,
         SORT_90,
-        ENTER_BACKPACK
+        ENTER_BACKPACK,
+        TOP_OFF
     }
 
     private val ICON_MAP = mapOf(
@@ -56,7 +57,8 @@ internal object UiDraw {
         IconType.SORT_ZA to ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/sort_alpha_desc"),
         IconType.SORT_09 to ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/sort_number_asc"),
         IconType.SORT_90 to ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/sort_number_desc"),
-        IconType.ENTER_BACKPACK to ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/enter_backpack")
+        IconType.ENTER_BACKPACK to ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/enter_backpack"),
+        IconType.TOP_OFF to ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/top_off")
     )
 
     const val ACCENT = 0xFFFFC107.toInt()

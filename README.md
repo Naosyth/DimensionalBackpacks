@@ -47,7 +47,7 @@ Any block that exposes the standard item handler capability is picked up by the 
 
 Backpack block models can be replaced at `assets/dimensional_backpacks/models/backpack_tier_1.json` through `backpack_tier_3.json`. The item models inherit those same models, so a replacement changes the placed, held and worn backpack appearance. Backpack model textures are stitched into Minecraft's block atlas: put them under `assets/dimensional_backpacks/textures/block/` and reference them as `dimensional_backpacks:block/<texture_name>` in the model.
 
-The storage screen uses `assets/dimensional_backpacks/textures/gui/storage.png`, a 256x96 texture atlas. It is split into 16x16 sprites. At y=0, the sprites starting at x=0, 16, 32, 48 and 64 are the panel, inset, dark inset, active inset and hovered inset; x=80 and 96 are the button and hovered button; x=128 and 144 are the enabled and disabled toggle. At y=32, x=0, 16, 32, 48, 64, 80 and 96 are the add, search, settings, sort-up, sort-down, drag-grip and crafting-arrow icons. Panels and controls are nine-sliced from their 16x16 sprite, so their 4-pixel corners stay crisp at different screen sizes. The 18x18 slot sprite is at x=0, y=64. Replace this mod-owned atlas to theme the storage screen without changing vanilla inventory slots; standard Minecraft item icons remain individually replaceable through their item models and textures.
+The storage screen uses individual GUI sprites under `assets/dimensional_backpacks/textures/gui/sprites/storage/`. Replace these sprite files in a resource pack to theme the mod's panels, buttons, controls, and icons without changing vanilla inventory slots. Standard Minecraft item icons remain individually replaceable through their item models and textures.
 
 ## Building
 

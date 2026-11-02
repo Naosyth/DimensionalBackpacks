@@ -5,15 +5,16 @@ import com.naosyth.dimensionalbackpacks.dimensional_backpacks.block.ModBlocks
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.item.ModComponents
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.item.BackpackUndyeRecipe
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.item.BackpackCopyRecipe
-import net.minecraft.world.item.CreativeModeTabs
-import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent
+import net.minecraft.core.registries.Registries
+import net.minecraft.network.chat.Component
+import net.minecraft.world.item.CreativeModeTab
+import net.minecraft.world.item.ItemStack
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.command.DebugCommands
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.item.ModItems
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.network.ModNetwork
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.client.ClientInit
 import net.neoforged.api.distmarker.Dist
 import net.neoforged.fml.loading.FMLEnvironment
-import net.neoforged.neoforge.event.entity.player.PlayerEvent
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.BackpackEvents
 import net.neoforged.fml.ModList
@@ -24,15 +25,18 @@ import top.theillusivec4.curios.api.event.CurioCanEquipEvent
 import net.neoforged.fml.common.Mod
 import net.neoforged.neoforge.common.NeoForge
 import net.neoforged.neoforge.event.RegisterCommandsEvent
+import net.neoforged.neoforge.registries.DeferredRegister
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import thedarkcolour.kotlinforforge.neoforge.forge.MOD_BUS
+import java.util.function.Supplier
 
 @Mod(DimensionalBackpacks.ID)
 object DimensionalBackpacks {
     const val ID = "dimensional_backpacks"
 
     val LOGGER: Logger = LogManager.getLogger(ID)
+    private val CREATIVE_TABS = DeferredRegister.create<CreativeModeTab>(Registries.CREATIVE_MODE_TAB, ID)
 
     init {
         ModBlocks.REGISTRY.register(MOD_BUS)
@@ -42,13 +46,21 @@ object DimensionalBackpacks {
         com.naosyth.dimensionalbackpacks.dimensional_backpacks.storage.ModMenus.REGISTRY.register(MOD_BUS)
         BackpackUndyeRecipe.REGISTRY.register(MOD_BUS)
         BackpackCopyRecipe.REGISTRY.register(MOD_BUS)
-        MOD_BUS.addListener<BuildCreativeModeTabContentsEvent> { event ->
-            if (event.tabKey == CreativeModeTabs.TOOLS_AND_UTILITIES) {
-                for (item in ModItems.allBackpacks()) event.accept(item)
-                event.accept(ModItems.DECORATIVE_WALL.get())
-                event.accept(ModItems.ZIPPER.get())
+        CREATIVE_TABS.register(
+            "main",
+            Supplier {
+                CreativeModeTab.builder()
+                    .title(Component.translatable("itemGroup.dimensional_backpacks"))
+                    .icon { ItemStack(ModItems.ZIPPER.get()) }
+                    .displayItems { _, output ->
+                        ModItems.allBackpacks().forEach(output::accept)
+                        output.accept(ModItems.DECORATIVE_WALL.get())
+                        output.accept(ModItems.ZIPPER.get())
+                    }
+                    .build()
             }
-        }
+        )
+        CREATIVE_TABS.register(MOD_BUS)
         MOD_BUS.addListener<RegisterPayloadHandlersEvent> { ModNetwork.register(it) }
         if (FMLEnvironment.dist == Dist.CLIENT) {
             ClientInit.init()

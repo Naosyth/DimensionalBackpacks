@@ -78,7 +78,9 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
         val search = Rect(toolbar.x, toolbar.y, sort.x - 4 - toolbar.x, 15)
         val fullnessBar = Rect(toolbar.x, toolbar.y + 17, sort.x - 4 - toolbar.x, TOOLBAR_H - 17)
 
-        val nameField = Rect(toolbar.x, toolbar.y, toolbar.w - DELETE_W - 4, 15)
+        val nameField = Rect(toolbar.x, toolbar.y, toolbar.w - DELETE_W - TOP_OFF_W - 8, 15)
+        val configFullnessBar = Rect(toolbar.x, toolbar.y + 17, nameField.w, TOOLBAR_H - 17)
+        val topOff = Rect(toolbar.right - DELETE_W - TOP_OFF_W - 4, toolbar.y, TOP_OFF_W, TOOLBAR_H)
         val deleteGroup = Rect(toolbar.right - DELETE_W, toolbar.y, DELETE_W, TOOLBAR_H)
 
         val height get() = storage.h + PANEL_GAP + BOTTOM_H
@@ -98,6 +100,7 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
             const val PANEL_GAP = 2
             const val CRAFT_W = 3 * CELL + 22 + CELL
             const val DELETE_W = 20
+            const val TOP_OFF_W = 20
             const val DEPOSIT_W = 51
             const val ENTER_W = 24
             const val CRAFT_Y = 27
@@ -143,15 +146,27 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
 
         val enter = Button(layout.enterButton, { g, r -> UiDraw.icon(g, UiDraw.IconType.ENTER_BACKPACK, r) },
             { listOf(Component.literal("Step inside this backpack")) },
-            visible = { menu.placed }) { actions.enterBackpack() }
+            visible = { menu.placed && !configMode }) { actions.enterBackpack() }
 
         val fullnessBar = createFullnessBar()
+        val configFullnessBar = createFullnessBar(layout.configFullnessBar)
 
         mainViews = listOf(groupBar, gear, enter, sortButton(), fullnessBar, depositButton(layout.depositAll, "All", "Deposit inventory",
             "Moves everything from your inventory into this group.", false),
             depositButton(layout.depositMatching, "Matching", "Deposit matching",
                 "Moves items from your inventory that this group already holds.", true), grid)
-        configViews = listOf(groupBar, gear, enter, fullnessBar,
+        configViews = listOf(groupBar, gear, enter, configFullnessBar,
+            Button(layout.topOff, { g, r -> UiDraw.icon(g, UiDraw.IconType.TOP_OFF, r) },
+                {
+                    val enabled = model.groups.getOrNull(model.selected)?.fillPartialStacksFirst == true
+                    listOf(
+                        Component.literal("Fill partial stacks first: ${if (enabled) "On" else "Off"}"),
+                        Component.literal("When depositing, top off matching stacks across this group before using priority order.")
+                            .withStyle(ChatFormatting.GRAY)
+                    )
+                },
+                active = { model.groups.getOrNull(model.selected)?.fillPartialStacksFirst == true }
+            ) { actions.toggleFillPartialStacksFirst() },
             Button(layout.deleteGroup, { g, r -> UiDraw.icon(g, UiDraw.IconType.TRASH, r) },
                 { listOf(Component.literal("Delete this group")) },
                 visible = { model.groups.size > 1 }) { actions.removeGroup() },
@@ -170,7 +185,7 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
 
     private var selectedGroupListeners: List<() -> Unit> = emptyList()
 
-    private fun createFullnessBar() = FullnessBar(layout.fullnessBar, { model.usedSlots }, { model.totalSlots }) {
+    private fun createFullnessBar(area: Rect = layout.fullnessBar) = FullnessBar(area, { model.usedSlots }, { model.totalSlots }) {
         listOf(
             Component.literal("Storage Capacity"),
             Component.literal("${model.usedSlots} / ${model.totalSlots} slots").withStyle(ChatFormatting.GRAY)

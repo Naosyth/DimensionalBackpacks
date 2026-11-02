@@ -75,6 +75,7 @@ class PlotManager : SavedData() {
                 val groupTag = CompoundTag()
                 groupTag.put("storages", storages)
                 groupTag.putString("name", group.name)
+                groupTag.putBoolean("fillPartialStacksFirst", group.fillPartialStacksFirst)
                 groups.add(groupTag)
             }
             entry.put("groups", groups)
@@ -110,8 +111,12 @@ class PlotManager : SavedData() {
                 }
                 val groups = entry.getList("groups", Tag.TAG_COMPOUND.toInt())
                 for (g in 0 until groups.size) {
-                    val group = StorageGroup(name = groups.getCompound(g).getString("name"))
-                    val storages = groups.getCompound(g).getList("storages", Tag.TAG_COMPOUND.toInt())
+                    val groupTag = groups.getCompound(g)
+                    val group = StorageGroup(
+                        name = groupTag.getString("name"),
+                        fillPartialStacksFirst = groupTag.getBoolean("fillPartialStacksFirst")
+                    )
+                    val storages = groupTag.getList("storages", Tag.TAG_COMPOUND.toInt())
                     for (j in 0 until storages.size) {
                         val storage = storages.getCompound(j)
                         val pos = BlockPos.of(storage.getLong("pos"))

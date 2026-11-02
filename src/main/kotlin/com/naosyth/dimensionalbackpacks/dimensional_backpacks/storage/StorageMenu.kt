@@ -139,7 +139,7 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
         }
         for (left in remaining) {
             if (left.isEmpty) continue
-            val rest = PlotStorage.insert(storages, left.copy())
+            val rest = insertIntoSelectedGroup(storages, left.copy())
             if (!rest.isEmpty) player.inventory.placeItemBackInInventory(rest)
         }
         result.onCraftedBy(level, player, result.count)
@@ -182,6 +182,11 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
     /** Only valid after [PlotStorage.detect], which guarantees the plot has a group. */
     private fun selectedGroup(plot: Plot): StorageGroup = plot.groups[groupIndex.coerceIn(plot.groups.indices)]
 
+    private fun insertIntoSelectedGroup(storages: List<PlotStorage.Storage>, stack: ItemStack): ItemStack {
+        val (_, plot) = plot() ?: return stack
+        return PlotStorage.insert(storages, stack, selectedGroup(plot).fillPartialStacksFirst)
+    }
+
     fun groupAction(action: Int, index: Int, name: String = "") {
         val (pocket, plot) = plot() ?: return
         PlotStorage.detect(pocket, plot)
@@ -201,6 +206,10 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
                 groupIndex = groupIndex.coerceAtMost(plot.groups.lastIndex)
             }
             StorageGroupPayload.RENAME -> selectedGroup(plot).name = name.trim().take(StorageGroup.MAX_NAME)
+            StorageGroupPayload.TOGGLE_FILL_PARTIAL_STACKS_FIRST -> {
+                val group = selectedGroup(plot)
+                group.fillPartialStacksFirst = !group.fillPartialStacksFirst
+            }
             else -> return
         }
         PlotManager.get(pocket).setDirty()
@@ -224,7 +233,7 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
             val slot = slots[index]
             val stack = slot.item
             if (stack.isEmpty || (matchingOnly && PlotStorage.count(storages, stack) == 0L)) continue
-            val rest = PlotStorage.insert(storages, stack.copy())
+            val rest = insertIntoSelectedGroup(storages, stack.copy())
             if (rest.count != stack.count) slot.set(rest)
         }
         sync(true)
@@ -237,7 +246,7 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
         val carried = carried
         if (!carried.isEmpty) {
             val offered = if (button == 1) carried.copyWithCount(1) else carried.copy()
-            val rest = PlotStorage.insert(storages, offered)
+            val rest = insertIntoSelectedGroup(storages, offered)
             carried.shrink(offered.count - rest.count)
             setCarried(if (carried.isEmpty) ItemStack.EMPTY else carried)
         } else if (!template.isEmpty) {
@@ -316,7 +325,7 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
         val stack = slot.item
         val copy = stack.copy()
         val storages = storages() ?: return ItemStack.EMPTY
-        val rest = PlotStorage.insert(storages, stack.copy())
+        val rest = insertIntoSelectedGroup(storages, stack.copy())
         if (rest.count == stack.count) return ItemStack.EMPTY
         slot.set(if (rest.isEmpty) ItemStack.EMPTY else rest)
         sync(true)
@@ -355,12 +364,19 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
             val members = PlotStorage.members(g, all)
             val totalSlots = members.sumOf { it.handler.slots }
             val usedSlots = members.sumOf { m -> (0 until m.handler.slots).count { !m.handler.getStackInSlot(it).isEmpty } }
-            StorageSyncPayload.Group(members.firstOrNull()?.let(::blockIcon) ?: ItemStack.EMPTY, members.size, g.name, usedSlots, totalSlots)
+            StorageSyncPayload.Group(
+                members.firstOrNull()?.let(::blockIcon) ?: ItemStack.EMPTY,
+                members.size,
+                g.name,
+                usedSlots,
+                totalSlots,
+                g.fillPartialStacksFirst
+            )
         }
         val selected = plot.groups.indexOf(group)
         val signature = listOf(
             selected,
-            groups.map { listOf(it.icon.item, it.size, it.name, it.usedSlots, it.totalSlots) },
+            groups.map { listOf(it.icon.item, it.size, it.name, it.usedSlots, it.totalSlots, it.fillPartialStacksFirst) },
             items.map { ItemStack.hashItemAndComponents(it.stack) to it.count },
             infos.map { listOf(it.pos, it.enabled, it.used, it.size) }
         )

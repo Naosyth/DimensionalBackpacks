@@ -14,7 +14,8 @@ data class Spawn(val x: Double, val y: Double, val z: Double, val yaw: Float, va
 class StorageGroup(
     val order: ArrayList<BlockPos> = ArrayList(),
     val enabled: HashSet<BlockPos> = HashSet(),
-    var name: String = ""
+    var name: String = "",
+    var fillPartialStacksFirst: Boolean = false
 ) {
     companion object {
         const val MAX = 9

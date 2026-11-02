@@ -69,6 +69,7 @@ internal class StorageActions(private val menu: StorageMenu) {
     fun addGroup() = group(StorageGroupPayload.ADD)
     fun removeGroup() = group(StorageGroupPayload.REMOVE)
     fun renameGroup(name: String) = group(StorageGroupPayload.RENAME, name = name)
+    fun toggleFillPartialStacksFirst() = group(StorageGroupPayload.TOGGLE_FILL_PARTIAL_STACKS_FIRST)
     fun enterBackpack() = PacketDistributor.sendToServer(StorageEnterPayload(menu.containerId))
     fun deposit(matchingOnly: Boolean) =
         PacketDistributor.sendToServer(StorageDepositPayload(menu.containerId, matchingOnly))
