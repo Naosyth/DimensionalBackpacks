@@ -1,5 +1,6 @@
 package com.naosyth.dimensionalbackpacks.dimensional_backpacks.storage
 
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.config.ModConfig
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.Plot
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.PlotManager
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.StorageGroup
@@ -70,7 +71,7 @@ object PlotStorage {
             for (pos in existing) {
                 if (pos in group.order) continue
                 group.order.add(pos)
-                if (index == 0) group.enabled.add(pos)
+                if (index == 0 && group.enabled.size < ModConfig.maxStoragesPerGroup(plot.tier)) group.enabled.add(pos)
                 changed = true
             }
         }

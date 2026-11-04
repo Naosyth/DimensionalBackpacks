@@ -1,5 +1,7 @@
 package com.naosyth.dimensionalbackpacks.dimensional_backpacks.config
 
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.StorageGroup
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.Tier
 import net.minecraft.world.level.block.state.BlockState
 import net.neoforged.neoforge.common.ModConfigSpec
 
@@ -57,9 +59,47 @@ object ModConfig {
         .comment("Whether crafting a linked backpack with a blank one of the same tier makes another backpack linked to the same interior.")
         .define("allow_backpack_copying", true)
 
+    private val containerLimitsEnabled: ModConfigSpec.BooleanValue
+    private val containerLimits: List<ModConfigSpec.IntValue>
+    private val groupLimitsEnabled: ModConfigSpec.BooleanValue
+    private val groupLimits: List<ModConfigSpec.IntValue>
+
+    init {
+        val containerDefaults = listOf(3, 6, 10)
+        val groupDefaults = listOf(3, 6, 9)
+
+        builder.comment("Limits on how many storages can be enabled in one storage group.").push("storages_per_group")
+        containerLimitsEnabled = builder
+            .comment("Whether the per-tier limits below are enforced. When false, groups can hold any number of storages.")
+            .define("enabled", false)
+        containerLimits = Tier.entries.map {
+            builder.comment("Max storages in one group for tier ${it.ordinal + 1} backpacks.")
+                .defineInRange("tier_${it.ordinal + 1}", containerDefaults[it.ordinal], 1, 1000)
+        }
+        builder.pop()
+
+        builder.comment("Limits on how many storage groups a backpack can have.").push("groups_per_backpack")
+        groupLimitsEnabled = builder
+            .comment("Whether the per-tier limits below are enforced. When false, backpacks can have up to ${StorageGroup.MAX} groups.")
+            .define("enabled", false)
+        groupLimits = Tier.entries.map {
+            builder.comment("Max groups for tier ${it.ordinal + 1} backpacks (at most ${StorageGroup.MAX}).")
+                .defineInRange("tier_${it.ordinal + 1}", groupDefaults[it.ordinal], 1, StorageGroup.MAX)
+        }
+        builder.pop()
+    }
+
     val SPEC: ModConfigSpec = builder.build()
 
     fun isCopyingEnabled(): Boolean = !SPEC.isLoaded || copyingEnabled.get()
+
+    /** Max enabled storages in one group of a [tier] backpack. */
+    fun maxStoragesPerGroup(tier: Tier): Int =
+        if (!SPEC.isLoaded || !containerLimitsEnabled.get()) Int.MAX_VALUE else containerLimits[tier.ordinal].get()
+
+    /** Max groups in a [tier] backpack, never above [StorageGroup.MAX]. */
+    fun maxGroups(tier: Tier): Int =
+        if (!SPEC.isLoaded || !groupLimitsEnabled.get()) StorageGroup.MAX else groupLimits[tier.ordinal].get()
 
     fun isPlacementBlocked(state: BlockState): Boolean = !placementRule.allows(state)
 }

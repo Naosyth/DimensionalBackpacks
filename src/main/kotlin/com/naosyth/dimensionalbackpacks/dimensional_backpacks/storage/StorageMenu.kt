@@ -1,5 +1,6 @@
 package com.naosyth.dimensionalbackpacks.dimensional_backpacks.storage
 
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.config.ModConfig
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.item.BackpackItem
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.item.ModComponents
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.item.WornBackpack
@@ -196,7 +197,7 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
                 groupIndex = index
             }
             StorageGroupPayload.ADD -> {
-                if (plot.groups.size >= StorageGroup.MAX) return
+                if (plot.groups.size >= ModConfig.maxGroups(plot.tier)) return
                 plot.groups.add(StorageGroup(order = ArrayList(plot.groups.first().order)))
                 groupIndex = plot.groups.lastIndex
             }
@@ -274,7 +275,10 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
         when (action) {
             StorageConfigPayload.TOGGLE -> {
                 val pos = order[index]
-                if (!group.enabled.remove(pos)) group.enabled.add(pos)
+                if (!group.enabled.remove(pos)) {
+                    if (group.enabled.size >= ModConfig.maxStoragesPerGroup(plot.tier)) return
+                    group.enabled.add(pos)
+                }
             }
             StorageConfigPayload.UP -> if (index > 0) java.util.Collections.swap(order, index, index - 1)
             StorageConfigPayload.DOWN -> if (index < order.size - 1) java.util.Collections.swap(order, index, index + 1)
