@@ -4,6 +4,7 @@ import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.StorageGroup
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.Tier
 import net.minecraft.world.level.block.state.BlockState
 import net.neoforged.neoforge.common.ModConfigSpec
+import kotlin.math.roundToInt
 
 /** Server-side settings, in `config/dimensional_backpacks-common.toml`. */
 object ModConfig {
@@ -89,9 +90,18 @@ object ModConfig {
         builder.pop()
     }
 
+    private val enterHoldSeconds = builder
+        .comment(
+            "How long the enter button must be held to step inside a worn backpack. Taking damage resets the timer.",
+            "Set to 0 to enter instantly."
+        )
+        .defineInRange("worn_enter_hold_seconds", 2.0, 0.0, 30.0)
+
     val SPEC: ModConfigSpec = builder.build()
 
     fun isCopyingEnabled(): Boolean = !SPEC.isLoaded || copyingEnabled.get()
+
+    fun wornEnterHoldTicks(): Int = if (SPEC.isLoaded) (enterHoldSeconds.get() * 20).roundToInt() else 40
 
     /** Max enabled storages in one group of a [tier] backpack. */
     fun maxStoragesPerGroup(tier: Tier): Int =

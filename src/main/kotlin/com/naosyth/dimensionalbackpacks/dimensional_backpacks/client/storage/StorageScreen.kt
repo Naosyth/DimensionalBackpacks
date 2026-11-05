@@ -43,7 +43,8 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
     private val views get() = if (configMode) configViews else mainViews
 
     private var query = ""
-
+    private var enterHeld = false
+    private var enterHeldTicks = 0
     init {
         Minecraft.getInstance().soundManager.play(
             SimpleSoundInstance.forUI(SoundEvents.BUNDLE_INSERT, 1.0f + (Random.nextFloat() * 0.08f - 0.04f))
@@ -62,8 +63,8 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
         val inventory = Rect(storage.right - INV_W, crafting.y, INV_W, BOTTOM_H)
         val config = Rect(x, y, STORAGE_W, GRID_Y + rows * CELL + PAD)
 
-        // A floating panel beside the screen, only used for placed backpacks.
-        val enterPanel = Rect(storage.right + PANEL_GAP, y, ENTER_W + 2 * PAD, ENTER_W + 2 * PAD)
+        // A floating panel beside the screen, to the left.
+        val enterPanel = Rect(storage.x - PANEL_GAP - (ENTER_W + 2 * PAD), y, ENTER_W + 2 * PAD, ENTER_W + 2 * PAD)
         val enterButton = Rect(enterPanel.x + PAD, enterPanel.y + PAD, ENTER_W, ENTER_W)
 
         val depositAll = Rect(crafting.x + PAD, crafting.y + PAD, DEPOSIT_W, DEPOSIT_H)
@@ -146,7 +147,9 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
 
         val enter = Button(layout.enterButton, { g, r -> UiDraw.icon(g, UiDraw.IconType.ENTER_BACKPACK, r) },
             { listOf(Component.literal("Step inside this backpack")) },
-            visible = { menu.placed && !configMode }) { actions.enterBackpack() }
+            visible = { !configMode },
+            progress = { if (model.enterHoldTicks == 0) 0f else enterHeldTicks.toFloat() / model.enterHoldTicks },
+            onRelease = { setEnterHeld(false) }) { setEnterHeld(true) }
 
         val fullnessBar = createFullnessBar()
         val configFullnessBar = createFullnessBar(layout.configFullnessBar)
@@ -307,6 +310,17 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
     override fun containerTick() {
         super.containerTick()
         grid.tick()
+        if (enterHeld) {
+            val player = Minecraft.getInstance().player
+            enterHeldTicks = if (player != null && player.hurtTime > 0) 0 else enterHeldTicks + 1
+        }
+    }
+
+    private fun setEnterHeld(held: Boolean) {
+        if (enterHeld == held) return
+        enterHeld = held
+        enterHeldTicks = 0
+        actions.setEnterHeld(held)
     }
 
     // ---- Drawing ----
@@ -345,7 +359,6 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
     }
 
     private fun renderActionPanel(g: GuiGraphics) {
-        if (!menu.placed) return
         UiDraw.panelAction(g, layout.enterPanel)
     }
 

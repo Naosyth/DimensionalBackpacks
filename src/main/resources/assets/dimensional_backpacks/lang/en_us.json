@@ -8,7 +8,7 @@
   "key.dimensional_backpacks.storage": "Open Backpack Storage",
   "container.dimensional_backpacks.storage": "Backpack Storage",
   "key.categories.dimensional_backpacks": "Dimensional Backpacks",
-  "block.dimensional_backpacks.backpack_tier_1": "Backpack (Tier 1)",
-  "block.dimensional_backpacks.backpack_tier_2": "Backpack (Tier 2)",
-  "block.dimensional_backpacks.backpack_tier_3": "Backpack (Tier 3)"
+  "block.dimensional_backpacks.backpack_tier_1": "Small Backpack",
+  "block.dimensional_backpacks.backpack_tier_2": "Medium Backpack",
+  "block.dimensional_backpacks.backpack_tier_3": "Large Backpack"
 }

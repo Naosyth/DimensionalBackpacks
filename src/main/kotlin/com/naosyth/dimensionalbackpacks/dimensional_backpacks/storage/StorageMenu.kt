@@ -217,10 +217,25 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
         sync(true)
     }
 
-    /** Moves the player into the interior; only offered when the screen was opened from a placed backpack. */
-    fun enterBackpack() {
+    /** Placed backpacks are entered instantly; a worn one must be held for the configured time, restarting on damage. */
+    private val enterHoldTicks get() = if (placed) 0 else ModConfig.wornEnterHoldTicks()
+    private var enterHeld = false
+    private var enterHeldTicks = 0
+
+    fun setEnterHeld(held: Boolean) {
+        enterHeld = held
+        enterHeldTicks = 0
+        if (held && enterHoldTicks == 0) enterBackpack()
+    }
+
+    private fun tickEnterHold(player: ServerPlayer) {
+        if (!enterHeld) return
+        enterHeldTicks = if (player.hurtTime > 0) 0 else enterHeldTicks + 1
+        if (enterHeldTicks >= enterHoldTicks) enterBackpack()
+    }
+
+    private fun enterBackpack() {
         val player = inventory.player as? ServerPlayer ?: return
-        if (!placed) return
         val pocket = PlotManager.getPocketLevel(player.server) ?: return
         val plot = PlotManager.get(pocket).get(plotId) ?: return
         player.closeContainer()
@@ -349,6 +364,7 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
         if (ticks % PlotLoader.REFRESH_INTERVAL == 0) plot()?.second?.let { PlotLoader.keepLoaded(player.server, it) }
         if (lastSent == null || ticks % 10 == 0) sync(false)
         if (ticks % 10 == 0) updateResult()
+        tickEnterHold(player)
         ticks++
     }
 
@@ -382,11 +398,12 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
             selected,
             groups.map { listOf(it.icon.item, it.size, it.name, it.usedSlots, it.totalSlots, it.fillPartialStacksFirst) },
             items.map { ItemStack.hashItemAndComponents(it.stack) to it.count },
-            infos.map { listOf(it.pos, it.enabled, it.used, it.size) }
+            infos.map { listOf(it.pos, it.enabled, it.used, it.size) },
+            enterHoldTicks
         )
         if (!force && signature == lastSent) return
         lastSent = signature
-        PacketDistributor.sendToPlayer(player, StorageSyncPayload(groups, selected, items, infos))
+        PacketDistributor.sendToPlayer(player, StorageSyncPayload(groups, selected, items, infos, enterHoldTicks))
     }
 
     private fun blockIcon(storage: PlotStorage.Storage) = ItemStack(storage.state.block.asItem())

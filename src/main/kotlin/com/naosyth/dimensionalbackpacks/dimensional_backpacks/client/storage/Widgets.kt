@@ -13,6 +13,8 @@ internal class Button(
     private val tooltip: () -> List<Component>? = { null },
     private val active: () -> Boolean = { false },
     private val visible: () -> Boolean = { true },
+    private val progress: () -> Float = { 0f },
+    private val onRelease: () -> Unit = {},
     private val onClick: () -> Unit
 ) : View {
 
@@ -24,6 +26,8 @@ internal class Button(
             UiDraw.button(g, area, UiDraw.ButtonVariant.NORMAL)
         }
         icon(g, area)
+        val filled = (area.h * progress()).toInt()
+        if (filled > 0) g.fill(area.x, area.bottom - filled, area.right, area.bottom, PROGRESS_COLOR)
     }
 
     override fun tooltip(mx: Int, my: Int) = if (visible() && area.contains(mx, my)) tooltip() else null
@@ -35,6 +39,15 @@ internal class Button(
             SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.0f, 0.1f)
         )
         return true
+    }
+
+    override fun mouseReleased(mx: Int, my: Int): Boolean {
+        onRelease()
+        return false
+    }
+
+    private companion object {
+        const val PROGRESS_COLOR = 0x8855FF55.toInt()
     }
 }
 

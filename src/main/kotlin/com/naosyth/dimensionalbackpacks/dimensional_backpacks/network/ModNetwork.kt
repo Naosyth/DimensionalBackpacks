@@ -41,7 +41,7 @@ object ModNetwork {
         registrar.playToServer(StorageEnterPayload.TYPE, StorageEnterPayload.CODEC) { payload, context ->
             context.enqueueWork {
                 val menu = context.player().containerMenu as? StorageMenu ?: return@enqueueWork
-                if (menu.containerId == payload.containerId) menu.enterBackpack()
+                if (menu.containerId == payload.containerId) menu.setEnterHeld(payload.held)
             }
         }
         registrar.playToServer(StorageConfigPayload.TYPE, StorageConfigPayload.CODEC) { payload, context ->

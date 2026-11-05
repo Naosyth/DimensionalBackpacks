@@ -61,14 +61,15 @@ data class StorageGroupPayload(val containerId: Int, val action: Int, val index:
     }
 }
 
-/** Client to server: move items from the player's inventory (not the hotbar) into the selected group. */
-data class StorageEnterPayload(val containerId: Int) : CustomPacketPayload {
+/** Client to server: the enter button was pressed or released. The server decides when the hold is long enough. */
+data class StorageEnterPayload(val containerId: Int, val held: Boolean) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<StorageEnterPayload> = TYPE
 
     companion object {
         val TYPE = CustomPacketPayload.Type<StorageEnterPayload>(id("storage_enter"))
         val CODEC: StreamCodec<RegistryFriendlyByteBuf, StorageEnterPayload> = StreamCodec.composite(
             ByteBufCodecs.VAR_INT, StorageEnterPayload::containerId,
+            ByteBufCodecs.BOOL, StorageEnterPayload::held,
             ::StorageEnterPayload
         )
     }
@@ -111,9 +112,15 @@ data class StorageConfigPayload(val containerId: Int, val index: Int, val action
 /**
  * Server to client: the storage screen's data. [groups] are all of the plot's groups and [selected] the open
  * one; [items] are the aggregated items of the selected group and [storages] every storage in that group's
- * priority order.
+ * priority order. [enterHoldTicks] is how long the enter button must be held (0 for no wait).
  */
-data class StorageSyncPayload(val groups: List<Group>, val selected: Int, val items: List<Item>, val storages: List<Info>) : CustomPacketPayload {
+data class StorageSyncPayload(
+    val groups: List<Group>,
+    val selected: Int,
+    val items: List<Item>,
+    val storages: List<Info>,
+    val enterHoldTicks: Int
+) : CustomPacketPayload {
     /**
      * A group, shown by the block of its top storage ([icon] is empty for a group with none). It has [size]
      * storages with [usedSlots] of [totalSlots] slots occupied.
@@ -172,6 +179,7 @@ data class StorageSyncPayload(val groups: List<Group>, val selected: Int, val it
             ByteBufCodecs.VAR_INT, StorageSyncPayload::selected,
             Item.CODEC.apply(ByteBufCodecs.list()), StorageSyncPayload::items,
             Info.CODEC.apply(ByteBufCodecs.list()), StorageSyncPayload::storages,
+            ByteBufCodecs.VAR_INT, StorageSyncPayload::enterHoldTicks,
             ::StorageSyncPayload
         )
     }
