@@ -146,7 +146,7 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
         )
 
         val enter = Button(layout.enterButton, { g, r -> UiDraw.icon(g, UiDraw.IconType.ENTER_BACKPACK, r) },
-            { listOf(Component.literal("Step inside this backpack")) },
+            { listOf(Component.literal("Enter backpack")) },
             visible = { !configMode },
             progress = { if (model.enterHoldTicks == 0) 0f else enterHeldTicks.toFloat() / model.enterHoldTicks },
             onRelease = { setEnterHeld(false) }) { setEnterHeld(true) }
@@ -378,7 +378,7 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
         super.renderTooltip(g, x, y)
         if (hoveredSlot?.hasItem() == true && !configMode) return
         val lines = views.firstNotNullOfOrNull { it.tooltip(x, y) } ?: return
-        g.renderTooltip(font, lines, Optional.empty(), x, y)
+        g.renderTooltip(font, lines, Optional.ofNullable(views.firstNotNullOfOrNull { it.tooltipImage(x, y) }), x, y)
     }
 
     // ---- Input ----

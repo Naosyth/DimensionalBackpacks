@@ -1,6 +1,9 @@
 package com.naosyth.dimensionalbackpacks.dimensional_backpacks.client
 
 import com.mojang.blaze3d.platform.InputConstants
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.client.storage.ClientContentsTooltip
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.client.storage.ContentsTooltip
+import net.neoforged.neoforge.client.event.RegisterClientTooltipComponentFactoriesEvent
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.client.storage.StorageScreen
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.network.StorageOpenPayload
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.network.StorageSyncPayload
@@ -45,6 +48,9 @@ object ClientInit {
         }
         MOD_BUS.addListener<net.neoforged.neoforge.client.event.RegisterMenuScreensEvent> {
             it.register(ModMenus.STORAGE.get(), ::StorageScreen)
+        }
+        MOD_BUS.addListener<RegisterClientTooltipComponentFactoriesEvent> {
+            it.register(ContentsTooltip::class.java) { tooltip -> ClientContentsTooltip(tooltip) }
         }
         MOD_BUS.addListener<EntityRenderersEvent.AddLayers> { event ->
             for (skin in listOf(PlayerSkin.Model.WIDE, PlayerSkin.Model.SLIM)) {

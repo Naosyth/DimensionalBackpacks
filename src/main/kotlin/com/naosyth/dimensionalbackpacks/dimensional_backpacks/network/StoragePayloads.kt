@@ -156,15 +156,28 @@ data class StorageSyncPayload(
         }
     }
 
-    /** A storage block. [pos] is relative to the backpack's interior origin; [used] of [size] slots hold items. */
-    data class Info(val pos: BlockPos, val icon: ItemStack, val enabled: Boolean, val used: Int, val size: Int) {
+    /**
+     * A storage block. [pos] is relative to the backpack's interior origin; [used] of [size] slots hold items.
+     * [preview] is the contents of its first slots, for the tooltip.
+     */
+    data class Info(
+        val pos: BlockPos,
+        val icon: ItemStack,
+        val enabled: Boolean,
+        val used: Int,
+        val size: Int,
+        val preview: List<ItemStack>
+    ) {
         companion object {
+            const val PREVIEW_SLOTS = 54
+
             val CODEC: StreamCodec<RegistryFriendlyByteBuf, Info> = StreamCodec.composite(
                 BlockPos.STREAM_CODEC, Info::pos,
                 ItemStack.OPTIONAL_STREAM_CODEC, Info::icon,
                 ByteBufCodecs.BOOL, Info::enabled,
                 ByteBufCodecs.VAR_INT, Info::used,
                 ByteBufCodecs.VAR_INT, Info::size,
+                ItemStack.OPTIONAL_STREAM_CODEC.apply(ByteBufCodecs.list()), Info::preview,
                 ::Info
             )
         }

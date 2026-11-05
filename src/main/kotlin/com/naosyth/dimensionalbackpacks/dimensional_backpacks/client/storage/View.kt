@@ -2,6 +2,7 @@ package com.naosyth.dimensionalbackpacks.dimensional_backpacks.client.storage
 
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.network.chat.Component
+import net.minecraft.world.inventory.tooltip.TooltipComponent
 
 /** A rectangle in absolute screen coordinates. */
 internal class Rect(val x: Int, val y: Int, val w: Int, val h: Int) {
@@ -21,6 +22,7 @@ internal class Rect(val x: Int, val y: Int, val w: Int, val h: Int) {
 internal interface View {
     fun render(g: GuiGraphics, mx: Int, my: Int) {}
     fun tooltip(mx: Int, my: Int): List<Component>? = null
+    fun tooltipImage(mx: Int, my: Int): TooltipComponent? = null
     fun mouseClicked(mx: Int, my: Int, button: Int): Boolean = false
     fun mouseDragged(mx: Int, my: Int): Boolean = false
     fun mouseReleased(mx: Int, my: Int): Boolean = false

@@ -8,6 +8,7 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.resources.sounds.SimpleSoundInstance
 import net.minecraft.network.chat.Component
 import net.minecraft.sounds.SoundEvents
+import net.minecraft.world.inventory.tooltip.TooltipComponent
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -152,12 +153,15 @@ internal class StorageList(
         if (dragging || !content.contains(mx, my)) return null
         val index = indexAt(my) ?: return null
         val info = storages[index]
-        return listOf(
-            info.icon.hoverName,
-            Component.literal("Priority ${index + 1}").withStyle(ChatFormatting.GRAY),
-            Component.literal("At ${info.pos.x}, ${info.pos.y}, ${info.pos.z} in the backpack").withStyle(ChatFormatting.DARK_GRAY),
-            Component.literal("Drag to reorder").withStyle(ChatFormatting.DARK_GRAY)
-        )
+        return listOf(info.icon.hoverName)
+    }
+
+    override fun tooltipImage(mx: Int, my: Int): TooltipComponent? {
+        if (dragging || !content.contains(mx, my)) return null
+        val index = indexAt(my) ?: return null
+        val info = storages[index]
+        val subtitle = Component.literal("Priority ${index + 1} · ${info.size} slots").withStyle(ChatFormatting.GRAY)
+        return ContentsTooltip(subtitle, info.preview, info.size)
     }
 
     private companion object {

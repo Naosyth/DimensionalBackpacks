@@ -378,7 +378,10 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
             val storage = all.getValue(pos)
             val size = storage.handler.slots
             val used = (0 until size).count { !storage.handler.getStackInSlot(it).isEmpty }
-            StorageSyncPayload.Info(pos.subtract(plot.origin), blockIcon(storage), pos in group.enabled, used, size)
+            val preview = (0 until minOf(size, StorageSyncPayload.Info.PREVIEW_SLOTS))
+                .map { storage.handler.getStackInSlot(it).copy() }
+                .dropLastWhile { it.isEmpty }
+            StorageSyncPayload.Info(pos.subtract(plot.origin), blockIcon(storage), pos in group.enabled, used, size, preview)
         }
         val groups = plot.groups.map { g ->
             val members = PlotStorage.members(g, all)
@@ -398,7 +401,7 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
             selected,
             groups.map { listOf(it.icon.item, it.size, it.name, it.usedSlots, it.totalSlots, it.fillPartialStacksFirst) },
             items.map { ItemStack.hashItemAndComponents(it.stack) to it.count },
-            infos.map { listOf(it.pos, it.enabled, it.used, it.size) },
+            infos.map { info -> listOf(info.pos, info.enabled, info.used, info.size) + info.preview.map { ItemStack.hashItemAndComponents(it) to it.count } },
             enterHoldTicks
         )
         if (!force && signature == lastSent) return
