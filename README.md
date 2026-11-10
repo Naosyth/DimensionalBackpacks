@@ -12,7 +12,7 @@ Minecraft 1.21.1, NeoForge 21.1.x. Requires [Kotlin for Forge](https://modrinth.
 
 - **Three tiers** of backpack, each with a bigger, differently shaped interior.
 - **Placeable:** put a backpack down so others can walk in too.
-- **Storage screen:** all item storage in the backpack shown as one list, with search, a sort button that cycles name/amount order, and a built-in crafting grid that holds real items and retains them when closed. The grid belongs to the backpack and is shared by anyone accessing it. Up to nine nameable storage groups (tabs along the top) each aggregate their own set of storages; use the gear to name a group, choose which storages belong to it and drag them into priority order. Buttons above the crafting grid deposit your inventory, or only items the group already holds.
+- **Storage screen:** all item storage in the backpack shown as one list, with search, a sort button that cycles name/amount order, and a built-in crafting grid that holds real items and retains them when closed. The grid belongs to the backpack and is shared by anyone accessing it. Up to nine nameable storage groups (tabs along the top) each aggregate their own set of storages; use the gear to name a group, choose which storages belong to it and drag them into priority order. New groups top off matching partial stacks before using priority order by default; this can be toggled per group. Buttons above the crafting grid deposit your inventory, or only items the group already holds.
 - **Copying:** craft a linked backpack with a blank one of the same tier to get another backpack linked to the same interior (the original is kept).
 - **Dyeable:** dye a backpack, and the color of the interior changes to match.
 

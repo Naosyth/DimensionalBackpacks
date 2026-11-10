@@ -117,7 +117,8 @@ class PlotManager : SavedData() {
                     val groupTag = groups.getCompound(g)
                     val group = StorageGroup(
                         name = groupTag.getString("name"),
-                        fillPartialStacksFirst = groupTag.getBoolean("fillPartialStacksFirst")
+                        fillPartialStacksFirst = !groupTag.contains("fillPartialStacksFirst") ||
+                            groupTag.getBoolean("fillPartialStacksFirst")
                     )
                     val storages = groupTag.getList("storages", Tag.TAG_COMPOUND.toInt())
                     for (j in 0 until storages.size) {

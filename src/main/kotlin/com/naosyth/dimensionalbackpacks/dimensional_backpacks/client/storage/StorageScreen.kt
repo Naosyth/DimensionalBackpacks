@@ -173,8 +173,11 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
                 active = { model.groups.getOrNull(model.selected)?.fillPartialStacksFirst == true }
             ) { actions.toggleFillPartialStacksFirst() },
             Button(layout.deleteGroup, { g, r -> UiDraw.icon(g, UiDraw.IconType.TRASH, r) },
-                { listOf(Component.literal("Delete this group")) },
-                visible = { model.groups.size > 1 }) { actions.removeGroup() },
+                {
+                    if (model.groups.size > 1) listOf(Component.literal("Delete this group"))
+                    else listOf(Component.literal("Cannot delete the last group"))
+                },
+                enabled = { model.groups.size > 1 }) { actions.removeGroup() },
             list)
         selectedGroupListeners = listOf(list::resetScroll, grid::resetScroll)
         placeSlots()

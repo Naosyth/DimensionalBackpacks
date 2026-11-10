@@ -1,5 +1,6 @@
 package com.naosyth.dimensionalbackpacks.dimensional_backpacks.client.storage
 
+import com.mojang.blaze3d.systems.RenderSystem
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.resources.sounds.SimpleSoundInstance
@@ -13,6 +14,7 @@ internal class Button(
     private val tooltip: () -> List<Component>? = { null },
     private val active: () -> Boolean = { false },
     private val visible: () -> Boolean = { true },
+    private val enabled: () -> Boolean = { true },
     private val progress: () -> Float = { 0f },
     private val onRelease: () -> Unit = {},
     private val onClick: () -> Unit
@@ -20,12 +22,25 @@ internal class Button(
 
     override fun render(g: GuiGraphics, mx: Int, my: Int) {
         if (!visible()) return
-        if (active() || area.contains(mx, my)) {
-            UiDraw.button(g, area, UiDraw.ButtonVariant.HIGHLIGHTED)
-        } else {
-            UiDraw.button(g, area, UiDraw.ButtonVariant.NORMAL)
+        val variant = when {
+            !enabled() -> UiDraw.ButtonVariant.DISABLED
+            active() || area.contains(mx, my) -> UiDraw.ButtonVariant.HIGHLIGHTED
+            else -> UiDraw.ButtonVariant.NORMAL
         }
-        icon(g, area)
+        UiDraw.button(g, area, variant)
+        if (variant == UiDraw.ButtonVariant.DISABLED) {
+            RenderSystem.enableBlend()
+            RenderSystem.defaultBlendFunc()
+            g.setColor(1f, 1f, 1f, 0.75f)
+            try {
+                icon(g, area)
+            } finally {
+                g.setColor(1f, 1f, 1f, 1f)
+                RenderSystem.disableBlend()
+            }
+        } else {
+            icon(g, area)
+        }
         val filled = (area.h * progress()).toInt()
         if (filled > 0) g.fill(area.x, area.bottom - filled, area.right, area.bottom, PROGRESS_COLOR)
     }
@@ -33,7 +48,7 @@ internal class Button(
     override fun tooltip(mx: Int, my: Int) = if (visible() && area.contains(mx, my)) tooltip() else null
 
     override fun mouseClicked(mx: Int, my: Int, button: Int): Boolean {
-        if (button != 0 || !visible() || !area.contains(mx, my)) return false
+        if (button != 0 || !visible() || !enabled() || !area.contains(mx, my)) return false
         onClick()
         Minecraft.getInstance().soundManager.play(
             SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.0f, 0.1f)

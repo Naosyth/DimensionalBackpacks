@@ -17,7 +17,7 @@ class StorageGroup(
     val order: ArrayList<BlockPos> = ArrayList(),
     val enabled: HashSet<BlockPos> = HashSet(),
     var name: String = "",
-    var fillPartialStacksFirst: Boolean = false
+    var fillPartialStacksFirst: Boolean = true
 ) {
     companion object {
         const val MAX = 9
