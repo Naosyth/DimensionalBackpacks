@@ -121,6 +121,7 @@ internal class ItemGrid(
                 val x = content.x + col * CELL + 1
                 val y = content.y + row * CELL + 1
                 g.renderItem(entry.stack, x, y)
+                g.renderItemDecorations(UiDraw.font, entry.stack, x, y, "")
                 if (entry.count != 1L) UiDraw.cornerText(g, formatCount(entry.count), x, y)
             }
         }

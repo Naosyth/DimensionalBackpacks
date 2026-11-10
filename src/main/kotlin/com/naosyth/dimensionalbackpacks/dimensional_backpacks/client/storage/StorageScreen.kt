@@ -384,6 +384,10 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
     // ---- Input ----
 
     override fun mouseClicked(mx: Double, my: Double, button: Int): Boolean {
+        if (!configMode && button == 1 && layout.search.contains(mx.toInt(), my.toInt())) {
+            search.value = ""
+            return true
+        }
         if (views.any { it.mouseClicked(mx.toInt(), my.toInt(), button) }) {
             textBoxes.forEach { it.isFocused = false }
             return true
