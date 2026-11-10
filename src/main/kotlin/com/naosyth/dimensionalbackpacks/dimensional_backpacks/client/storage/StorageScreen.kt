@@ -29,6 +29,8 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
     AbstractContainerScreen<StorageMenu>(menu, inventory, title) {
 
     private val model = StorageModel()
+    internal val recipeTransferItems get() = model.items
+    internal val recipeTransferReady get() = !configMode && model.received
     private val actions = StorageActions(menu)
     private var configMode = false
 

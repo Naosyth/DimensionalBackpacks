@@ -10,7 +10,7 @@ Minecraft 1.21.1, NeoForge 21.1.x. Requires [Kotlin for Forge](https://modrinth.
 
 - **Three tiers** of backpack, each with a bigger, differently shaped interior.
 - **Placeable:** put a backpack down so others can walk in too.
-- **Storage screen:** all item storage in the backpack shown as one list, with search, a sort button that cycles name/amount order, and a built-in crafting grid that refills from storage. Up to nine nameable storage groups (tabs along the top) each aggregate their own set of storages; use the gear to name a group, choose which storages belong to it and drag them into priority order. Buttons above the crafting grid deposit your inventory, or only items the group already holds.
+- **Storage screen:** all item storage in the backpack shown as one list, with search, a sort button that cycles name/amount order, and a built-in crafting grid that holds real items and retains them when closed. The grid belongs to the backpack and is shared by anyone accessing it. Up to nine nameable storage groups (tabs along the top) each aggregate their own set of storages; use the gear to name a group, choose which storages belong to it and drag them into priority order. Buttons above the crafting grid deposit your inventory, or only items the group already holds.
 - **Copying:** craft a linked backpack with a blank one of the same tier to get another backpack linked to the same interior (the original is kept).
 - **Dyeable:** dye a backpack, and the color of the interior changes to match.
 
@@ -42,6 +42,8 @@ The list has a `mode` (`WHITELIST` or `BLACKLIST`) and a `blocks` list. Entries 
 ## Mod compatibility
 
 Any block that exposes the standard item handler capability is picked up by the storage screen, so most storage mods work without special support.
+
+With Just Enough Items (JEI) installed, use its recipe transfer button to move ingredients from the current storage group and player inventory into the backpack's crafting grid. Shift-click transfers as many sets as are available.
 
 ## Resource packs
 

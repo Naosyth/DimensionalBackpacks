@@ -12,8 +12,8 @@ import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.PlotLoader
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.PlotManager
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.PlotTravel
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.StorageGroup
-import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.Tier
 import net.minecraft.core.GlobalPos
+import net.minecraft.core.NonNullList
 import net.minecraft.network.chat.Component
 import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket
 import net.minecraft.server.level.ServerLevel
@@ -23,25 +23,18 @@ import net.minecraft.world.SimpleMenuProvider
 import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.inventory.AbstractContainerMenu
-import net.minecraft.world.inventory.ClickType
 import net.minecraft.world.inventory.ResultContainer
+import net.minecraft.world.inventory.ResultSlot
 import net.minecraft.world.inventory.Slot
 import net.minecraft.world.inventory.TransientCraftingContainer
 import net.minecraft.world.item.ItemStack
 import net.minecraft.world.item.crafting.RecipeType
-import net.neoforged.neoforge.common.CommonHooks
-import net.neoforged.neoforge.event.EventHooks
 import net.neoforged.neoforge.network.PacketDistributor
 
 /**
  * The aggregated storage screen of a plot. The player's inventory is made of normal slots; the
  * aggregated item grid is virtual, driven by custom click packets, and synced with [StorageSyncPayload].
- * It shows one of the plot's storage groups at a time, and crafting draws from that same group.
- *
- * The crafting grid is ghost-only: its slots hold one-item templates that are never real items.
- * Clicking one with a stack on the cursor copies the item in without using it up, and clicking it
- * empty clears it. Taking the result consumes the real ingredients from storage (then the player's
- * inventory), and the result only shows while every ingredient is available.
+ * The crafting grid holds real items shared by everyone accessing the same backpack.
  *
  * Slot indices: 0 result, 1-9 crafting grid, 10-36 inventory, 37-45 hotbar. Slot positions are
  * laid out by the client screen.
@@ -52,116 +45,104 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
     /** Set on the server when opened from a placed backpack; the menu closes if the player walks away. */
     var anchor: GlobalPos? = null
 
-    private val craftSlots = TransientCraftingContainer(this, 3, 3)
+    private val craftSlots = object : TransientCraftingContainer(
+        this, 3, 3, plot()?.second?.craftingItems ?: NonNullList.withSize(9, ItemStack.EMPTY)
+    ) {
+        override fun setChanged() {
+            this@StorageMenu.slotsChanged(this)
+        }
+    }
     private val resultSlots = ResultContainer()
+    private var updatingCraftSlots = false
     private var ticks = 0
     private var lastSent: List<Any>? = null
     private var groupIndex = 0
 
-    private class GhostSlot(container: Container, index: Int) : Slot(container, index, 0, 0) {
-        override fun mayPlace(stack: ItemStack) = false
-        override fun mayPickup(player: Player) = false
-    }
-
-    private class ResultOnlySlot(container: Container) : Slot(container, 0, 0, 0) {
-        override fun mayPlace(stack: ItemStack) = false
-        override fun mayPickup(player: Player) = false
-    }
-
     init {
-        addSlot(ResultOnlySlot(resultSlots))
-        for (i in 0 until 9) addSlot(GhostSlot(craftSlots, i))
+        addSlot(ResultSlot(inventory.player, craftSlots, resultSlots, 0, 0, 0))
+        for (i in 0 until 9) addSlot(Slot(craftSlots, i, 0, 0))
         for (row in 0 until 3) {
             for (col in 0 until 9) addSlot(Slot(inventory, col + row * 9 + 9, 0, 0))
         }
         for (col in 0 until 9) addSlot(Slot(inventory, col, 0, 0))
     }
 
-    // Runs on both sides, so the client predicts ghost changes. The result slot is server-only.
-    override fun clicked(slotId: Int, button: Int, clickType: ClickType, player: Player) {
-        when (slotId) {
-            RESULT_SLOT -> (player as? ServerPlayer)?.let { craftClick(it, clickType) }
-            in CRAFT_START until INVENTORY_START -> ghostClick(slotId - CRAFT_START, button, clickType, player)
-            else -> super.clicked(slotId, button, clickType, player)
-        }
-    }
-
-    private fun ghostClick(index: Int, button: Int, clickType: ClickType, player: Player) {
-        when (clickType) {
-            ClickType.PICKUP -> craftSlots.setItem(index, if (carried.isEmpty) ItemStack.EMPTY else carried.copyWithCount(1))
-            ClickType.QUICK_MOVE -> craftSlots.setItem(index, ItemStack.EMPTY)
-            ClickType.SWAP -> if (button in 0..8) {
-                val stack = player.inventory.getItem(button)
-                craftSlots.setItem(index, if (stack.isEmpty) ItemStack.EMPTY else stack.copyWithCount(1))
-            }
-            else -> {}
-        }
-    }
-
-    private fun craftClick(player: ServerPlayer, clickType: ClickType) {
+    fun transferRecipe(templates: List<ItemStack>, maxTransfer: Boolean) {
+        val player = serverPlayer ?: return
+        if (templates.size != craftSlots.containerSize) return
         val storages = storages() ?: return
-        when (clickType) {
-            ClickType.PICKUP -> {
-                val result = resultSlots.getItem(0)
-                if (result.isEmpty) return
-                val held = carried
-                if (!held.isEmpty && !(ItemStack.isSameItemSameComponents(held, result) && held.count + result.count <= held.maxStackSize)) return
-                if (!craft(player, storages)) return
-                if (held.isEmpty) setCarried(result.copy()) else held.grow(result.count)
+        val groups = ArrayList<RecipeIngredient>()
+        templates.forEachIndexed { index, stack ->
+            if (!stack.isEmpty) {
+                val group = groups.firstOrNull { ItemStack.isSameItemSameComponents(it.template, stack) }
+                    ?: RecipeIngredient(stack.copyWithCount(1)).also { groups.add(it) }
+                group.slots.add(index)
             }
-            ClickType.QUICK_MOVE -> {
-                var crafted = 0
-                while (crafted < 64 && !resultSlots.getItem(0).isEmpty && player.inventory.freeSlot != -1) {
-                    val result = resultSlots.getItem(0).copy()
-                    if (!craft(player, storages)) break
-                    player.inventory.placeItemBackInInventory(result)
-                    crafted++
+        }
+        if (groups.isEmpty()) return
+        val totals = PlotStorage.totals(storages)
+        val grid = craftSlots.items.map { it.copy() }
+        val sets = maximumRecipeSets(groups.map { group ->
+            val stored = totals.firstOrNull { ItemStack.isSameItemSameComponents(it.stack, group.template) }?.count ?: 0L
+            val inInventory = player.inventory.items.filter { ItemStack.isSameItemSameComponents(it, group.template) }.sumOf { it.count.toLong() }
+            val inGrid = grid.filter { ItemStack.isSameItemSameComponents(it, group.template) }.sumOf { it.count.toLong() }
+            RecipeSupply(group.slots.size, stored + inInventory + inGrid, group.template.maxStackSize)
+        })
+        if (sets == 0) {
+            player.displayClientMessage(Component.literal("Not enough ingredients to transfer this recipe."), true)
+            return
+        }
+        val countPerSlot = if (maxTransfer) sets else 1
+        val reserved = ArrayList<ItemStack>()
+        var committed = false
+        updatingCraftSlots = true
+        try {
+            for (group in groups) {
+                val inGrid = grid.filter { ItemStack.isSameItemSameComponents(it, group.template) }.sumOf { it.count }
+                group.remaining = (group.slots.size * countPerSlot - inGrid).coerceAtLeast(0)
+            }
+            if (!reserveStorageIngredients(storages.map { it.handler }, groups, reserved)) {
+                player.displayClientMessage(Component.literal("Storage returned unexpected ingredients; recipe transfer cancelled."), true)
+                return
+            }
+            for (stack in player.inventory.items) {
+                val group = groups.firstOrNull { it.remaining > 0 && ItemStack.isSameItemSameComponents(it.template, stack) }
+                    ?: continue
+                val taken = stack.split(minOf(group.remaining, stack.count))
+                if (!taken.isEmpty) {
+                    reserved.add(taken)
+                    group.remaining -= taken.count
                 }
             }
-            else -> return
-        }
-        sync(true)
-    }
+            if (groups.any { it.remaining > 0 }) {
+                player.displayClientMessage(Component.literal("Not enough extractable ingredients; recipe transfer cancelled."), true)
+                return
+            }
 
-    /** Uses up one craft's ingredients and returns the leftovers (e.g. empty buckets). False if they weren't all there. */
-    private fun craft(player: ServerPlayer, storages: List<PlotStorage.Storage>): Boolean {
-        if (!canSupply(player, storages)) return false
-        val level = player.serverLevel()
-        val input = craftSlots.asCraftInput()
-        val result = resultSlots.getItem(0)
-        CommonHooks.setCraftingPlayer(player)
-        val remaining = level.recipeManager.getRemainingItemsFor(RecipeType.CRAFTING, input, level)
-        CommonHooks.setCraftingPlayer(null)
-        for (i in 0 until craftSlots.containerSize) {
-            val template = craftSlots.getItem(i)
-            if (template.isEmpty || !PlotStorage.extract(storages, template, 1).isEmpty) continue
-            val slot = player.inventory.items.indexOfFirst { ItemStack.isSameItemSameComponents(it, template) }
-            player.inventory.items[slot].shrink(1)
-        }
-        for (left in remaining) {
-            if (left.isEmpty) continue
-            val rest = insertIntoSelectedGroup(storages, left.copy())
-            if (!rest.isEmpty) player.inventory.placeItemBackInInventory(rest)
-        }
-        result.onCraftedBy(level, player, result.count)
-        EventHooks.firePlayerCraftingEvent(player, result, craftSlots)
-        resultSlots.awardUsedRecipes(player, craftSlots.items)
-        player.inventory.setChanged()
-        updateResult()
-        return true
-    }
-
-    private fun canSupply(player: ServerPlayer, storages: List<PlotStorage.Storage>): Boolean {
-        val needed = ArrayList<Pair<ItemStack, Int>>()
-        for (i in 0 until craftSlots.containerSize) {
-            val template = craftSlots.getItem(i)
-            if (template.isEmpty) continue
-            val at = needed.indexOfFirst { ItemStack.isSameItemSameComponents(it.first, template) }
-            if (at >= 0) needed[at] = needed[at].first to needed[at].second + 1 else needed.add(template to 1)
-        }
-        return needed.all { (template, amount) ->
-            val inInventory = player.inventory.items.filter { ItemStack.isSameItemSameComponents(it, template) }.sumOf { it.count }
-            PlotStorage.count(storages, template) + inInventory >= amount
+            val pool = (grid.filter { !it.isEmpty } + reserved.map { it.copy() }).toMutableList()
+            val replacement = MutableList(craftSlots.containerSize) { ItemStack.EMPTY }
+            for (group in groups) for (slot in group.slots) {
+                var needed = countPerSlot
+                val result = group.template.copyWithCount(countPerSlot)
+                for (stack in pool) {
+                    if (needed == 0) break
+                    if (!ItemStack.isSameItemSameComponents(stack, group.template)) continue
+                    val amount = minOf(needed, stack.count)
+                    stack.shrink(amount)
+                    needed -= amount
+                }
+                check(needed == 0) { "Reserved crafting ingredients were lost" }
+                replacement[slot] = result
+            }
+            replacement.forEachIndexed { index, stack -> craftSlots.setItem(index, stack) }
+            committed = true
+            pool.filter { !it.isEmpty }.forEach { player.inventory.placeItemBackInInventory(it) }
+        } finally {
+            updatingCraftSlots = false
+            if (!committed) reserved.filter { !it.isEmpty }.forEach { player.inventory.placeItemBackInInventory(it) }
+            player.inventory.setChanged()
+            slotsChanged(craftSlots)
+            sync(true)
         }
     }
 
@@ -309,13 +290,38 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
 
     override fun clickMenuButton(player: Player, id: Int): Boolean {
         if (id != BUTTON_CLEAR_GRID) return false
-        craftSlots.clearContent()
+        if (player !is ServerPlayer) return true
+        val storages = storages() ?: return false
+        updatingCraftSlots = true
+        try {
+            for (i in 0 until craftSlots.containerSize) {
+                val stack = craftSlots.removeItemNoUpdate(i)
+                if (stack.isEmpty) continue
+                val remaining = insertIntoSelectedGroup(storages, stack)
+                if (!remaining.isEmpty) player.inventory.placeItemBackInInventory(remaining)
+            }
+        } finally {
+            updatingCraftSlots = false
+        }
+        slotsChanged(craftSlots)
+        sync(true)
         return true
     }
 
     override fun slotsChanged(container: Container) {
-        super.slotsChanged(container)
-        if (container === craftSlots) updateResult()
+        if (container === craftSlots) {
+            if (updatingCraftSlots) return
+            val player = serverPlayer
+            if (player != null) {
+                plot()?.first?.let { PlotManager.get(it).setDirty() }
+                for (other in player.server.playerList.players) {
+                    val menu = other.containerMenu as? StorageMenu ?: continue
+                    if (menu.plotId == plotId && menu !== this) menu.updateResult()
+                }
+            }
+            updateResult()
+        }
+        super.broadcastChanges()
     }
 
     private fun updateResult() {
@@ -326,8 +332,7 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
         var result = ItemStack.EMPTY
         if (holder.isPresent && resultSlots.setRecipeUsed(level, player, holder.get())) {
             val assembled = holder.get().value().assemble(input, level.registryAccess())
-            val storages = storages()
-            if (assembled.isItemEnabled(level.enabledFeatures()) && storages != null && canSupply(player, storages)) result = assembled
+            if (assembled.isItemEnabled(level.enabledFeatures())) result = assembled
         }
         if (ItemStack.matches(result, resultSlots.getItem(0))) return
         resultSlots.setItem(0, result)
@@ -336,13 +341,28 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
     }
 
     override fun canTakeItemForPickAll(stack: ItemStack, slot: Slot): Boolean =
-        slot.container !== resultSlots && slot.container !== craftSlots && super.canTakeItemForPickAll(stack, slot)
+        slot.container !== resultSlots && super.canTakeItemForPickAll(stack, slot)
 
     override fun quickMoveStack(player: Player, index: Int): ItemStack {
         val slot = slots.getOrNull(index) ?: return ItemStack.EMPTY
-        if (index < INVENTORY_START || !slot.hasItem()) return ItemStack.EMPTY
+        if (!slot.hasItem()) return ItemStack.EMPTY
         val stack = slot.item
         val copy = stack.copy()
+        if (index == RESULT_SLOT) {
+            if (!moveItemStackTo(stack, INVENTORY_START, INVENTORY_END, true)) return ItemStack.EMPTY
+            slot.onQuickCraft(stack, copy)
+            if (stack.isEmpty) slot.setByPlayer(ItemStack.EMPTY) else slot.setChanged()
+            if (stack.count == copy.count) return ItemStack.EMPTY
+            slot.onTake(player, stack)
+            player.drop(stack, false)
+            return copy
+        }
+        if (index in CRAFT_START until INVENTORY_START) {
+            if (!moveItemStackTo(stack, INVENTORY_START, INVENTORY_END, false)) return ItemStack.EMPTY
+            if (stack.isEmpty) slot.setByPlayer(ItemStack.EMPTY) else slot.setChanged()
+            slot.onTake(player, stack)
+            return copy
+        }
         val storages = storages() ?: return ItemStack.EMPTY
         val rest = insertIntoSelectedGroup(storages, stack.copy())
         if (rest.count == stack.count) return ItemStack.EMPTY
@@ -361,9 +381,9 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
     override fun broadcastChanges() {
         super.broadcastChanges()
         val player = serverPlayer ?: return
+        if (ticks == 0) updateResult()
         if (ticks % PlotLoader.REFRESH_INTERVAL == 0) plot()?.second?.let { PlotLoader.keepLoaded(player.server, it) }
         if (lastSent == null || ticks % 10 == 0) sync(false)
-        if (ticks % 10 == 0) updateResult()
         tickEnterHold(player)
         ticks++
     }

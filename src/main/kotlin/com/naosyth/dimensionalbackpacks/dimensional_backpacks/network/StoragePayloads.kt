@@ -35,6 +35,21 @@ data class StorageClickPayload(val containerId: Int, val template: ItemStack, va
     }
 }
 
+/** Client to server: fill the crafting grid with real items matching the requested templates. */
+data class StorageRecipePayload(val containerId: Int, val templates: List<ItemStack>, val maxTransfer: Boolean) : CustomPacketPayload {
+    override fun type(): CustomPacketPayload.Type<StorageRecipePayload> = TYPE
+
+    companion object {
+        val TYPE = CustomPacketPayload.Type<StorageRecipePayload>(id("storage_recipe"))
+        val CODEC: StreamCodec<RegistryFriendlyByteBuf, StorageRecipePayload> = StreamCodec.composite(
+            ByteBufCodecs.VAR_INT, StorageRecipePayload::containerId,
+            ItemStack.OPTIONAL_STREAM_CODEC.apply(ByteBufCodecs.list(9)), StorageRecipePayload::templates,
+            ByteBufCodecs.BOOL, StorageRecipePayload::maxTransfer,
+            ::StorageRecipePayload
+        )
+    }
+}
+
 /**
  * Client to server: select, add, remove or rename a storage group, or toggle whether partial stacks are
  * filled before priority insertion. [index] is the group to select for [SELECT]; [name] is the new name

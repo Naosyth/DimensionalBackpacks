@@ -10,7 +10,7 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent
 
 object ModNetwork {
     fun register(event: RegisterPayloadHandlersEvent) {
-        val registrar = event.registrar("2")
+        val registrar = event.registrar("4")
         registrar.playToServer(ExitPayload.TYPE, ExitPayload.CODEC) { _, context ->
             context.enqueueWork {
                 val player = context.player() as? ServerPlayer ?: return@enqueueWork
@@ -24,6 +24,12 @@ object ModNetwork {
             context.enqueueWork {
                 val menu = context.player().containerMenu as? StorageMenu ?: return@enqueueWork
                 if (menu.containerId == payload.containerId) menu.click(payload.template, payload.button, payload.shift)
+            }
+        }
+        registrar.playToServer(StorageRecipePayload.TYPE, StorageRecipePayload.CODEC) { payload, context ->
+            context.enqueueWork {
+                val menu = context.player().containerMenu as? StorageMenu ?: return@enqueueWork
+                if (menu.containerId == payload.containerId) menu.transferRecipe(payload.templates, payload.maxTransfer)
             }
         }
         registrar.playToServer(StorageGroupPayload.TYPE, StorageGroupPayload.CODEC) { payload, context ->

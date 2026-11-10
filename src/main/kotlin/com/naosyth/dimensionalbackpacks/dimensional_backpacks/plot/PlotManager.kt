@@ -13,6 +13,7 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.level.Level
 import net.minecraft.world.level.saveddata.SavedData
+import net.minecraft.world.ContainerHelper
 
 /** Registry of all plots, stored with the pocket dimension's level data. */
 class PlotManager : SavedData() {
@@ -79,6 +80,7 @@ class PlotManager : SavedData() {
                 groups.add(groupTag)
             }
             entry.put("groups", groups)
+            entry.put("crafting", ContainerHelper.saveAllItems(CompoundTag(), plot.craftingItems, registries))
             list.add(entry)
         }
         tag.put("plots", list)
@@ -104,6 +106,7 @@ class PlotManager : SavedData() {
             for (i in 0 until list.size) {
                 val entry = list.getCompound(i)
                 val plot = Plot(entry.getInt("id"), entry.getInt("cell"), Tier.fromOrdinal(entry.getInt("tier")))
+                ContainerHelper.loadAllItems(entry.getCompound("crafting"), plot.craftingItems, registries)
                 if (entry.contains("color")) plot.color = entry.getInt("color")
                 if (entry.contains("spawnPoint")) {
                     val s = entry.getCompound("spawnPoint")

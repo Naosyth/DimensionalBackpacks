@@ -1,6 +1,8 @@
 package com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot
 
 import net.minecraft.core.BlockPos
+import net.minecraft.core.NonNullList
+import net.minecraft.world.item.ItemStack
 
 /** An exact standing position and view direction. */
 data class Spawn(val x: Double, val y: Double, val z: Double, val yaw: Float, val pitch: Float) {
@@ -54,6 +56,8 @@ data class Plot(val id: Int, val cell: Int, var tier: Tier) {
 
     /** User-defined storage groups, in display order. Maintained by PlotStorage, which keeps at least one. */
     val groups = ArrayList<StorageGroup>()
+
+    val craftingItems: NonNullList<ItemStack> = NonNullList.withSize(9, ItemStack.EMPTY)
 
     /** True for any block of the plot's bounding box, walls included. */
     fun contains(pos: BlockPos): Boolean {
