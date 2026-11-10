@@ -4,6 +4,8 @@ Build a room inside your backpack, then wear it and use all of its storage from 
 
 Each backpack holds its own pocket-dimension interior. Place a backpack and sneak + right-click it to step inside, build whatever you like, then pick it up and wear it. Every chest, barrel or other item-storage block in the room is combined into one searchable list, so you can reach everything with a keypress, without going in.
 
+The pocket dimension uses its own empty `dimensional_backpacks:backpack` biome rather than Minecraft's void biome.
+
 Minecraft 1.21.1, NeoForge 21.1.x. Requires [Kotlin for Forge](https://modrinth.com/mod/kotlin-for-forge). [Curios](https://modrinth.com/mod/curios) is optional, and adds a back slot for the worn backpack.
 
 ## Features

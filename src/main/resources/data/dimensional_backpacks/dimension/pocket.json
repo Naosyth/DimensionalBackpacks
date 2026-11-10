@@ -3,7 +3,7 @@
   "generator": {
     "type": "minecraft:flat",
     "settings": {
-      "biome": "minecraft:the_void",
+      "biome": "dimensional_backpacks:backpack",
       "features": false,
       "lakes": false,
       "layers": [],
