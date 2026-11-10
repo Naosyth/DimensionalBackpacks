@@ -121,7 +121,7 @@ dependencies {
     runtimeOnly "top.theillusivec4.curios:curios-neoforge:9.5.1+1.21.1"
 
     // JEI is optional at runtime and only its API is needed to compile the integration.
-    compileOnly "mezz.jei:jei-1.21.1-common-api:19.70.0.460"
+    compileOnly "mezz.jei:jei-1.21.1-common-api:19.52.0.421"
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
