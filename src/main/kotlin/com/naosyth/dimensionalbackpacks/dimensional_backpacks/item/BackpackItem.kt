@@ -3,7 +3,9 @@ package com.naosyth.dimensionalbackpacks.dimensional_backpacks.item
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.block.BackpackBlock
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.PlotManager
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.Tier
+import com.naosyth.dimensionalbackpacks.dimensional_backpacks.storage.StorageMenu
 import net.minecraft.network.chat.Component
+import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.InteractionHand
 import net.minecraft.world.InteractionResultHolder
 import net.minecraft.world.entity.EquipmentSlot
@@ -31,14 +33,18 @@ class BackpackItem(block: BackpackBlock, properties: Properties) : BlockItem(blo
     private fun hasCuriosBackpack(entity: LivingEntity): Boolean =
         ModList.get().isLoaded("curios") && !CuriosCompat.find(entity).isEmpty
 
-    // Right-clicking in the air wears the backpack; right-clicking a block places it.
+    // Sneak-use in the air still equips the backpack; ordinary air use opens its storage.
     override fun use(level: Level, player: Player, hand: InteractionHand): InteractionResultHolder<ItemStack> {
         val stack = player.getItemInHand(hand)
-        if (hasCuriosBackpack(player)) {
-            player.displayClientMessage(Component.literal("You can only wear one backpack at a time"), true)
-            return InteractionResultHolder.fail(stack)
+        if (player.isShiftKeyDown) {
+            if (hasCuriosBackpack(player)) {
+                player.displayClientMessage(Component.literal("You can only wear one backpack at a time"), true)
+                return InteractionResultHolder.fail(stack)
+            }
+            return swapWithEquipmentSlot(this, level, player, hand)
         }
-        return swapWithEquipmentSlot(this, level, player, hand)
+        if (player is ServerPlayer && !StorageMenu.openHeld(player, hand)) return InteractionResultHolder.fail(stack)
+        return InteractionResultHolder.sidedSuccess(stack, level.isClientSide)
     }
 
     // Backpacks may be carried inside a backpack, but never placed inside one.

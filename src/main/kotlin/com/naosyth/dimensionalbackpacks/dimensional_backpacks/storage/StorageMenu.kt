@@ -14,11 +14,13 @@ import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.PlotTravel
 import com.naosyth.dimensionalbackpacks.dimensional_backpacks.plot.StorageGroup
 import net.minecraft.core.GlobalPos
 import net.minecraft.core.NonNullList
+import net.minecraft.core.component.DataComponents
 import net.minecraft.network.chat.Component
 import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.Container
+import net.minecraft.world.InteractionHand
 import net.minecraft.world.SimpleMenuProvider
 import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.entity.player.Player
@@ -44,6 +46,8 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
 
     /** Set on the server when opened from a placed backpack; the menu closes if the player walks away. */
     var anchor: GlobalPos? = null
+    private var heldHand: InteractionHand? = null
+    private var heldSlot: Int = -1
 
     private val craftSlots = object : TransientCraftingContainer(
         this, 3, 3, plot()?.second?.craftingItems ?: NonNullList.withSize(9, ItemStack.EMPTY)
@@ -204,6 +208,10 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
     private var enterHeldTicks = 0
 
     fun setEnterHeld(held: Boolean) {
+        if (held && heldHand != null) {
+            serverPlayer?.displayClientMessage(Component.literal("Wear or place the backpack before entering it"), true)
+            return
+        }
         enterHeld = held
         enterHeldTicks = 0
         if (held && enterHoldTicks == 0) enterBackpack()
@@ -374,6 +382,11 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
     override fun stillValid(player: Player): Boolean {
         if (!player.isAlive) return false
         anchor?.let { return player.level().dimension() == it.dimension() && player.blockPosition().distSqr(it.pos()) < 100 }
+        heldHand?.let { hand ->
+            if (hand == InteractionHand.MAIN_HAND && player.inventory.selected != heldSlot) return false
+            val stack = player.getItemInHand(hand)
+            return stack.item is BackpackItem && stack.get(ModComponents.PLOT_ID.get()) == plotId
+        }
         val worn = WornBackpack.find(player)
         return worn.item is BackpackItem && worn.get(ModComponents.PLOT_ID.get()) == plotId
     }
@@ -441,18 +454,51 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
         /** Menu button id: move the crafting grid's contents into storage. */
         const val BUTTON_CLEAR_GRID = 0
 
-        /** Opens the screen of the plot [plot], from the worn backpack ([anchor] null) or a placed one. */
-        fun open(player: ServerPlayer, plot: Plot, anchor: GlobalPos?) {
+        /** Opens the screen of a worn, held or placed backpack. */
+        fun open(player: ServerPlayer, plot: Plot, anchor: GlobalPos?, hand: InteractionHand? = null) {
             PlotLoader.keepLoaded(player.server, plot)
             player.openMenu(
                 SimpleMenuProvider(
-                    { id, inventory, _ -> StorageMenu(id, inventory, plot.id, anchor != null).also { it.anchor = anchor } },
+                    { id, inventory, _ -> StorageMenu(id, inventory, plot.id, anchor != null).also {
+                        it.anchor = anchor
+                        it.heldHand = hand
+                        it.heldSlot = if (hand == InteractionHand.MAIN_HAND) player.inventory.selected else -1
+                    } },
                     Component.translatable("container.dimensional_backpacks.storage")
                 )
             ) {
                 it.writeVarInt(plot.id)
                 it.writeBoolean(anchor != null)
             }
+        }
+
+        fun openHeld(player: ServerPlayer, hand: InteractionHand): Boolean {
+            if (player.containerMenu !== player.inventoryMenu) return false
+            val stack = player.getItemInHand(hand)
+            val item = stack.item as? BackpackItem ?: return false
+            val pocket = PlotManager.getPocketLevel(player.server)
+            if (pocket == null) {
+                player.displayClientMessage(Component.literal("The pocket dimension is not available"), true)
+                return false
+            }
+            val id = stack.get(ModComponents.PLOT_ID.get())
+            val plot = if (id == null) {
+                val created = PlotManager.allocate(player.server, item.tier)
+                if (created == null) {
+                    player.displayClientMessage(Component.literal("Could not create the backpack interior"), true)
+                    return false
+                }
+                stack.set(ModComponents.PLOT_ID.get(), created.id)
+                PlotManager.get(pocket).setColor(created, stack.get(DataComponents.DYED_COLOR)?.rgb, pocket)
+                created
+            } else {
+                PlotManager.get(pocket).get(id) ?: run {
+                    player.displayClientMessage(Component.literal("This backpack's interior could not be found"), true)
+                    return false
+                }
+            }
+            open(player, plot, null, hand)
+            return true
         }
 
         /** Opens the screen for the backpack the player is wearing. */

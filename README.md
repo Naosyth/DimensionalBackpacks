@@ -18,7 +18,9 @@ Minecraft 1.21.1, NeoForge 21.1.x. Requires [Kotlin for Forge](https://modrinth.
 
 | Key | Action |
 | --- | --- |
-| `B` | Open the storage screen of the backpack you're wearing (right-clicking a placed backpack also works) |
+| `B` | Open the storage screen of the backpack you're wearing |
+| Right-click in air | Open the backpack held in your hand; sneak-right-click in air equips it |
+| Right-click a placed backpack | Open its storage screen; sneak-right-click enters it |
 | `X` | Leave the backpack you're inside (the zipper item also works) |
 
 Both keys can be rebound.
