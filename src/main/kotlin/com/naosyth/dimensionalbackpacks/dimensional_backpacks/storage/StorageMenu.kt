@@ -25,6 +25,7 @@ import net.minecraft.world.SimpleMenuProvider
 import net.minecraft.world.entity.player.Inventory
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.inventory.AbstractContainerMenu
+import net.minecraft.world.inventory.ClickType
 import net.minecraft.world.inventory.ResultContainer
 import net.minecraft.world.inventory.ResultSlot
 import net.minecraft.world.inventory.Slot
@@ -61,6 +62,7 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
     private var ticks = 0
     private var lastSent: List<Any>? = null
     private var groupIndex = 0
+    private var craftOutputLimit: CraftOutputLimit? = null
 
     init {
         addSlot(object : ResultSlot(inventory.player, craftSlots, resultSlots, 0, 0, 0) {
@@ -391,16 +393,32 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
     override fun canTakeItemForPickAll(stack: ItemStack, slot: Slot): Boolean =
         slot.container !== resultSlots && super.canTakeItemForPickAll(stack, slot)
 
+    override fun clicked(slotId: Int, button: Int, clickType: ClickType, player: Player) {
+        if (slotId != RESULT_SLOT || clickType != ClickType.QUICK_MOVE) {
+            super.clicked(slotId, button, clickType, player)
+            return
+        }
+        craftOutputLimit = CraftOutputLimit(resultSlots.getItem(0).maxStackSize)
+        try {
+            super.clicked(slotId, button, clickType, player)
+        } finally {
+            craftOutputLimit = null
+        }
+    }
+
     override fun quickMoveStack(player: Player, index: Int): ItemStack {
         val slot = slots.getOrNull(index) ?: return ItemStack.EMPTY
         if (!slot.hasItem()) return ItemStack.EMPTY
         val stack = slot.item
         val copy = stack.copy()
         if (index == RESULT_SLOT) {
+            val limit = craftOutputLimit
+            if (limit != null && !limit.allows(copy.count)) return ItemStack.EMPTY
             if (!moveItemStackTo(stack, INVENTORY_START, INVENTORY_END, true)) return ItemStack.EMPTY
             slot.onQuickCraft(stack, copy)
             if (stack.isEmpty) slot.setByPlayer(ItemStack.EMPTY) else slot.setChanged()
             if (stack.count == copy.count) return ItemStack.EMPTY
+            limit?.record(copy.count)
             slot.onTake(player, stack)
             player.drop(stack, false)
             return copy
