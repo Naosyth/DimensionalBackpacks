@@ -63,7 +63,24 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
     private var groupIndex = 0
 
     init {
-        addSlot(ResultSlot(inventory.player, craftSlots, resultSlots, 0, 0, 0))
+        addSlot(object : ResultSlot(inventory.player, craftSlots, resultSlots, 0, 0, 0) {
+            override fun onTake(player: Player, stack: ItemStack) {
+                if (player !is ServerPlayer) {
+                    super.onTake(player, stack)
+                    return
+                }
+                val ingredients = craftSlots.items.map { it.copy() }
+                updatingCraftSlots = true
+                try {
+                    super.onTake(player, stack)
+                    refillCraftSlots(ingredients)
+                } finally {
+                    updatingCraftSlots = false
+                    slotsChanged(craftSlots)
+                    sync(true)
+                }
+            }
+        })
         for (i in 0 until 9) addSlot(Slot(craftSlots, i, 0, 0))
         for (row in 0 until 3) {
             for (col in 0 until 9) addSlot(Slot(inventory, col + row * 9 + 9, 0, 0))
@@ -173,6 +190,16 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
         return PlotStorage.insert(storages, stack, selectedGroup(plot).fillPartialStacksFirst)
     }
 
+    private fun refillCraftSlots(ingredients: List<ItemStack>) {
+        if (ingredients.indices.none { !ingredients[it].isEmpty && craftSlots.getItem(it).isEmpty }) return
+        val storages = storages() ?: return
+        ingredients.forEachIndexed { index, ingredient ->
+            if (ingredient.isEmpty || !craftSlots.getItem(index).isEmpty) return@forEachIndexed
+            val replacement = PlotStorage.extract(storages, ingredient, 1)
+            if (!replacement.isEmpty) craftSlots.setItem(index, replacement)
+        }
+    }
+
     fun groupAction(action: Int, index: Int, name: String = "") {
         val (pocket, plot) = plot() ?: return
         PlotStorage.detect(pocket, plot)
@@ -245,8 +272,9 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
     }
 
     /** A click on the aggregated grid: put the carried stack in, or take the clicked item out. */
-    fun click(template: ItemStack, button: Int, shift: Boolean) {
+    fun click(template: ItemStack, button: Int, shift: Boolean, control: Boolean) {
         val player = serverPlayer ?: return
+        if (button !in 0..1) return
         val storages = storages() ?: return
         val carried = carried
         if (!carried.isEmpty) {
@@ -255,6 +283,19 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
             carried.shrink(offered.count - rest.count)
             setCarried(if (carried.isEmpty) ItemStack.EMPTY else carried)
         } else if (!template.isEmpty) {
+            if (control && button == 0) {
+                val inventory = player.inventory
+                val hasSpace = inventory.getFreeSlot() >= 0 ||
+                    (!template.isDamaged && inventory.getSlotWithRemainingSpace(template) >= 0)
+                if (!hasSpace) {
+                    player.displayClientMessage(Component.literal("Your inventory is full."), true)
+                    return
+                }
+                val taken = PlotStorage.extract(storages, template, 1)
+                if (!taken.isEmpty) inventory.placeItemBackInInventory(taken)
+                sync(true)
+                return
+            }
             val available = PlotStorage.count(storages, template)
             if (available > 0) {
                 val stackSize = minOf(available, template.maxStackSize.toLong()).toInt()
@@ -342,7 +383,6 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
             val assembled = holder.get().value().assemble(input, level.registryAccess())
             if (assembled.isItemEnabled(level.enabledFeatures())) result = assembled
         }
-        if (ItemStack.matches(result, resultSlots.getItem(0))) return
         resultSlots.setItem(0, result)
         setRemoteSlot(0, result)
         player.connection.send(ClientboundContainerSetSlotPacket(containerId, incrementStateId(), 0, result))
@@ -366,9 +406,13 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
             return copy
         }
         if (index in CRAFT_START until INVENTORY_START) {
-            if (!moveItemStackTo(stack, INVENTORY_START, INVENTORY_END, false)) return ItemStack.EMPTY
-            if (stack.isEmpty) slot.setByPlayer(ItemStack.EMPTY) else slot.setChanged()
-            slot.onTake(player, stack)
+            val storages = storages() ?: return ItemStack.EMPTY
+            val rest = insertIntoSelectedGroup(storages, stack.copy())
+            if (!rest.isEmpty) moveItemStackTo(rest, INVENTORY_START, INVENTORY_END, false)
+            if (rest.count == copy.count) return ItemStack.EMPTY
+            slot.setByPlayer(rest)
+            slot.onTake(player, rest)
+            sync(true)
             return copy
         }
         val storages = storages() ?: return ItemStack.EMPTY

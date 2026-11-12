@@ -47,7 +47,11 @@ The list has a `mode` (`WHITELIST` or `BLACKLIST`) and a `blocks` list. Entries 
 
 Any block that exposes the standard item handler capability is picked up by the storage screen, so most storage mods work without special support.
 
-With Just Enough Items (JEI) installed, use its recipe transfer button to move ingredients from the current storage group and player inventory into the backpack's crafting grid. Shift-click transfers as many sets as are available.
+With Just Enough Items (JEI) installed, use its recipe transfer button to move ingredients from the current storage group and player inventory into the backpack's crafting grid. Shift-click transfers as many sets as are available. JEI's recipe and uses keys also work over items in the storage grid.
+
+Shift-clicking a crafting ingredient deposits it into the current storage group, then your inventory if necessary. After crafting, emptied ingredient slots are refilled with one matching item from the current group when available; crafting remainders take priority.
+
+Ctrl-left-click an item in the storage grid to move one to your inventory; if your inventory is full, it stays in storage.
 
 ## Resource packs
 

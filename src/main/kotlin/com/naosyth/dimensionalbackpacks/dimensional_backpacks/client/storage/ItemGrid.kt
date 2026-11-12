@@ -7,6 +7,7 @@ import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
 import net.minecraft.ChatFormatting
 import net.minecraft.client.gui.screens.Screen.hasShiftDown
+import net.minecraft.client.gui.screens.Screen.hasControlDown
 import net.minecraft.world.item.ItemStack
 
 /** The aggregated items of the selected group as a searchable, sortable grid of slots. */
@@ -37,9 +38,9 @@ internal class ItemGrid(
     private var pinnedSeenOnCursor = false
     private var pinnedAge = 0
 
-    private var wasShift = false
+    private var wasModifierHeld = false
 
-    // Set by shift-extracting from the grid; cleared when Shift is released. Shift-clicking items in never freezes.
+    // Frozen during modifier extraction until both modifiers are released.
     private var frozen = false
 
     // ---- Data ----
@@ -57,7 +58,7 @@ internal class ItemGrid(
             .sortedWith(if (StoragePrefs.ascending) order else order.reversed())
     }
 
-    /** While Shift is held the order is frozen: counts update and vanished items stay at 0. */
+    /** While frozen, counts update and vanished items stay at 0. */
     private fun refreshInPlace(): Boolean {
         val kept = shown.map { old ->
             val now = model.items.firstOrNull { ItemStack.isSameItemSameComponents(it.stack, old.stack) }
@@ -86,13 +87,13 @@ internal class ItemGrid(
     }
 
     fun tick() {
-        val shift = hasShiftDown()
-        if (wasShift && !shift) {
+        val modifierHeld = hasShiftDown() || hasControlDown()
+        if (wasModifierHeld && !modifierHeld) {
             frozen = false
             pinned = ItemStack.EMPTY
             refresh()
         }
-        wasShift = shift
+        wasModifierHeld = modifierHeld
         if (pinned.isEmpty) return
         val onCursor = carried().takeIf { !it.isEmpty && ItemStack.isSameItemSameComponents(it, pinned) }
         if (onCursor != null) {
@@ -173,6 +174,13 @@ internal class ItemGrid(
     private fun stackAt(mx: Int, my: Int): ItemStack? =
         entryAt(mx, my)?.let { (col, row) -> shown[(row + scroll) * cols + col].stack }
 
+    fun ingredientAt(mx: Int, my: Int): Pair<ItemStack, Rect>? {
+        val (col, row) = entryAt(mx, my) ?: return null
+        val entry = shown[(row + scroll) * cols + col]
+        if (entry.count <= 0) return null
+        return entry.stack to Rect(content.x + col * CELL, content.y + row * CELL, CELL, CELL)
+    }
+
     private var shiftDragging = false
     private var lastDragIndex = -1
 
@@ -182,11 +190,13 @@ internal class ItemGrid(
     override fun contentClicked(mx: Int, my: Int, button: Int): Boolean {
         if (button != 0 && button != 1) return false
         val template = stackAt(mx, my) ?: ItemStack.EMPTY
-        if (carried().isEmpty && !template.isEmpty && !hasShiftDown()) pin(template)
-        shiftDragging = button == 0 && hasShiftDown()
+        val control = button == 0 && hasControlDown() && carried().isEmpty
+        val shift = hasShiftDown() && !control
+        if (carried().isEmpty && !template.isEmpty && !shift && !control) pin(template)
+        shiftDragging = button == 0 && shift
         lastDragIndex = indexAt(mx, my) ?: -1
-        if (hasShiftDown() && !template.isEmpty) frozen = true
-        actions.click(template, button, hasShiftDown())
+        if ((shift || control) && carried().isEmpty && !template.isEmpty) frozen = true
+        actions.click(template, button, shift, control)
         return true
     }
 

@@ -61,8 +61,8 @@ internal class StorageModel {
 
 /** What the screen can ask of the server. */
 internal class StorageActions(private val menu: StorageMenu) {
-    fun click(template: ItemStack, button: Int, shift: Boolean) =
-        PacketDistributor.sendToServer(StorageClickPayload(menu.containerId, template, button, shift))
+    fun click(template: ItemStack, button: Int, shift: Boolean, control: Boolean = false) =
+        PacketDistributor.sendToServer(StorageClickPayload(menu.containerId, template, button, shift, control))
 
     fun config(index: Int, action: Int, target: Int = 0) =
         PacketDistributor.sendToServer(StorageConfigPayload(menu.containerId, index, action, target))

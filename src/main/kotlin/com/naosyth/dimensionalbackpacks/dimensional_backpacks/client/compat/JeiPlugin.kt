@@ -8,6 +8,8 @@ import com.naosyth.dimensionalbackpacks.dimensional_backpacks.storage.StorageMen
 import mezz.jei.api.IModPlugin
 import mezz.jei.api.JeiPlugin
 import mezz.jei.api.constants.RecipeTypes
+import mezz.jei.api.gui.builder.IClickableIngredientFactory
+import mezz.jei.api.gui.handlers.IGuiContainerHandler
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView
 import mezz.jei.api.recipe.RecipeIngredientRole
 import mezz.jei.api.recipe.RecipeType
@@ -17,6 +19,8 @@ import mezz.jei.api.recipe.transfer.IRecipeTransferHandler
 import mezz.jei.api.recipe.transfer.IRecipeTransferHandlerHelper
 import mezz.jei.api.recipe.transfer.RecipeTransferResult
 import mezz.jei.api.registration.IRecipeTransferRegistration
+import mezz.jei.api.registration.IGuiHandlerRegistration
+import mezz.jei.api.runtime.IClickableIngredient
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
@@ -35,6 +39,17 @@ class JeiPlugin : IModPlugin {
 
     override fun registerRecipeTransferHandlers(registration: IRecipeTransferRegistration) {
         registration.addRecipeTransferHandler(StorageRecipeTransfer(registration.transferHelper), RecipeTypes.CRAFTING)
+    }
+
+    override fun registerGuiHandlers(registration: IGuiHandlerRegistration) {
+        registration.addGuiContainerHandler(StorageScreen::class.java, object : IGuiContainerHandler<StorageScreen> {
+            override fun getClickableIngredientUnderMouse(
+                factory: IClickableIngredientFactory, screen: StorageScreen, mouseX: Double, mouseY: Double
+            ): Optional<out IClickableIngredient<*>> {
+                val (stack, area) = screen.ingredientAt(mouseX.toInt(), mouseY.toInt()) ?: return Optional.empty()
+                return factory.createBuilder(stack).buildWithArea(area.x, area.y, area.w, area.h)
+            }
+        })
     }
 }
 

@@ -20,7 +20,7 @@ object StorageOpenPayload : CustomPacketPayload {
 }
 
 /** Client to server: a click in the aggregated item grid. [template] is empty when the click hit no item. */
-data class StorageClickPayload(val containerId: Int, val template: ItemStack, val button: Int, val shift: Boolean) : CustomPacketPayload {
+data class StorageClickPayload(val containerId: Int, val template: ItemStack, val button: Int, val shift: Boolean, val control: Boolean) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<StorageClickPayload> = TYPE
 
     companion object {
@@ -30,6 +30,7 @@ data class StorageClickPayload(val containerId: Int, val template: ItemStack, va
             ItemStack.OPTIONAL_STREAM_CODEC, StorageClickPayload::template,
             ByteBufCodecs.VAR_INT, StorageClickPayload::button,
             ByteBufCodecs.BOOL, StorageClickPayload::shift,
+            ByteBufCodecs.BOOL, StorageClickPayload::control,
             ::StorageClickPayload
         )
     }

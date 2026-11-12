@@ -31,6 +31,8 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
     private val model = StorageModel()
     internal val recipeTransferItems get() = model.items
     internal val recipeTransferReady get() = !configMode && model.received
+    internal fun ingredientAt(x: Int, y: Int) =
+        if (!configMode && menu.carried.isEmpty) grid.ingredientAt(x, y) else null
     private val actions = StorageActions(menu)
     private var configMode = false
 
