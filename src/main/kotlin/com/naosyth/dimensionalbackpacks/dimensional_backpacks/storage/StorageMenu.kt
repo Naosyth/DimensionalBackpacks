@@ -159,7 +159,10 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
             }
             replacement.forEachIndexed { index, stack -> craftSlots.setItem(index, stack) }
             committed = true
-            pool.filter { !it.isEmpty }.forEach { player.inventory.placeItemBackInInventory(it) }
+            pool.filter { !it.isEmpty }.forEach {
+                val remaining = insertIntoSelectedGroup(storages, it)
+                if (!remaining.isEmpty) player.inventory.placeItemBackInInventory(remaining)
+            }
         } finally {
             updatingCraftSlots = false
             if (!committed) reserved.filter { !it.isEmpty }.forEach { player.inventory.placeItemBackInInventory(it) }
