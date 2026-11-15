@@ -13,7 +13,6 @@ internal object UiDraw {
     private var PANEL_ITEMS_SPRITE = ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/panel_items")
     private var PANEL_CRAFTING_SPRITE = ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/panel_crafting")
     private var PANEL_INVENTORY_SPRITE = ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/panel_inventory")
-    private var PANEL_ACTION_SPRITE = ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/panel_action")
     private var PANEL_CONFIG_SPRITE = ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/panel_config")
 
     private var INSET_SPRITE = ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/inset")
@@ -43,7 +42,8 @@ internal object UiDraw {
         SORT_09,
         SORT_90,
         ENTER_BACKPACK,
-        TOP_OFF
+        TOP_OFF,
+        CLEAR_CRAFTING
     }
 
     private val ICON_MAP = mapOf(
@@ -58,7 +58,8 @@ internal object UiDraw {
         IconType.SORT_09 to ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/sort_number_asc"),
         IconType.SORT_90 to ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/sort_number_desc"),
         IconType.ENTER_BACKPACK to ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/enter_backpack"),
-        IconType.TOP_OFF to ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/top_off")
+        IconType.TOP_OFF to ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/top_off"),
+        IconType.CLEAR_CRAFTING to ResourceLocation.fromNamespaceAndPath("dimensional_backpacks", "storage/clear_crafting")
     )
 
     const val ACCENT = 0xFFFFC107.toInt()
@@ -77,10 +78,6 @@ internal object UiDraw {
 
     fun panelInventory(g: GuiGraphics, r: Rect) {
         g.blitSprite(PANEL_INVENTORY_SPRITE, r.x, r.y, r.w, r.h)
-    }
-
-    fun panelAction(g: GuiGraphics, r: Rect) {
-        g.blitSprite(PANEL_ACTION_SPRITE, r.x, r.y, r.w, r.h)
     }
 
     fun panelConfig(g: GuiGraphics, r: Rect) {

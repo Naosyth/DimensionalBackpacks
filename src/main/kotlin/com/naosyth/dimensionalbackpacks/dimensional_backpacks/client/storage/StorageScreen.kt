@@ -67,17 +67,16 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
         val inventory = Rect(storage.right - INV_W, crafting.y, INV_W, BOTTOM_H)
         val config = Rect(x, y, STORAGE_W, GRID_Y + rows * CELL + PAD)
 
-        // A floating panel beside the screen, to the left.
-        val enterPanel = Rect(storage.x - PANEL_GAP - (ENTER_W + 2 * PAD), y, ENTER_W + 2 * PAD, ENTER_W + 2 * PAD)
-        val enterButton = Rect(enterPanel.x + PAD, enterPanel.y + PAD, ENTER_W, ENTER_W)
+        val enterButton = Rect(storage.x - PANEL_GAP - ENTER_W, groupBar.centerY - ENTER_W / 2, ENTER_W, ENTER_W)
 
         val depositAll = Rect(crafting.x + PAD, crafting.y + PAD, DEPOSIT_W, DEPOSIT_H)
         val depositMatching = Rect(crafting.right - PAD - DEPOSIT_W, crafting.y + PAD, DEPOSIT_W, DEPOSIT_H)
 
-        // The three crafting parts are centred horizontally, below the deposit buttons.
+        // The three crafting parts are centred horizontally.
         val craftGrid = Rect(crafting.x + (crafting.w - CRAFT_W) / 2, crafting.y + CRAFT_Y, 3 * CELL, 3 * CELL)
         val craftArrow = Rect(craftGrid.right + 4, craftGrid.centerY - 5, 14, 10)
         val resultSlot = Rect(craftGrid.right + 22, craftGrid.centerY - CELL / 2, CELL, CELL)
+        val clearGrid = Rect(resultSlot.centerX - CLEAR_SIZE / 2, resultSlot.y - CLEAR_SIZE - 2, CLEAR_SIZE, CLEAR_SIZE)
 
         val sort = Rect(toolbar.right - TOOLBAR_H, toolbar.y, TOOLBAR_H, TOOLBAR_H)
         val search = Rect(toolbar.x, toolbar.y, sort.x - 4 - toolbar.x, 15)
@@ -106,12 +105,13 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
             const val CRAFT_W = 3 * CELL + 22 + CELL
             const val DELETE_W = 20
             const val TOP_OFF_W = 20
+            const val CLEAR_SIZE = 16
             const val DEPOSIT_W = 51
+            const val DEPOSIT_H = 14
             const val ENTER_W = 24
             const val CRAFT_Y = 27
             const val MIN_ROWS = 3
             const val MAX_ROWS = 12
-            const val DEPOSIT_H = 14
             private const val SCREEN_MARGIN = 8
 
             fun rowsFor(screenHeight: Int): Int {
@@ -158,10 +158,20 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
         val fullnessBar = createFullnessBar()
         val configFullnessBar = createFullnessBar(layout.configFullnessBar)
 
-        mainViews = listOf(groupBar, gear, enter, sortButton(), fullnessBar, depositButton(layout.depositAll, "All", "Deposit inventory",
-            "Moves everything from your inventory into this group.", false),
+        mainViews = listOf(groupBar, gear, enter, sortButton(), fullnessBar,
+            depositButton(layout.depositAll, "All", "Deposit inventory",
+                "Moves everything from your inventory into this group.", false),
             depositButton(layout.depositMatching, "Matching", "Deposit matching",
-                "Moves items from your inventory that this group already holds.", true), grid)
+                "Moves items from your inventory that this group already holds.", true),
+            Button(layout.clearGrid, { g, r -> UiDraw.icon(g, UiDraw.IconType.CLEAR_CRAFTING, r, 10) },
+                {
+                    listOf(
+                        Component.literal("Clear crafting grid"),
+                    )
+                }, framed = false) {
+                val id = if (hasAltDown()) StorageMenu.BUTTON_CLEAR_GRID_TO_INVENTORY else StorageMenu.BUTTON_CLEAR_GRID
+                Minecraft.getInstance().gameMode?.handleInventoryButtonClick(menu.containerId, id)
+            }, grid)
         configViews = listOf(groupBar, gear, enter, configFullnessBar,
             Button(layout.topOff, { g, r -> UiDraw.icon(g, UiDraw.IconType.TOP_OFF, r) },
                 {
@@ -264,9 +274,7 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
 
     private fun depositButton(area: Rect, label: String, title: String, detail: String, matchingOnly: Boolean) = Button(
         area,
-        { g, r ->
-            UiDraw.centeredText(g, label, r, 0xFFFFFFFF.toInt(), true)
-        },
+        { g, r -> UiDraw.centeredText(g, label, r, 0xFFFFFFFF.toInt(), true) },
         { listOf(Component.literal(title), Component.literal(detail).withStyle(ChatFormatting.GRAY)) }
     ) { actions.deposit(matchingOnly) }
 
@@ -337,7 +345,6 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
             renderItemsPanel(g)
             renderCraftingPanel(g)
             renderInventoryPanel(g)
-            renderActionPanel(g)
         } else {
             renderConfigPanel(g)
         }
@@ -363,10 +370,6 @@ class StorageScreen(menu: StorageMenu, inventory: Inventory, title: Component) :
         val invY = layout.inventory.y + Layout.PAD
         for (i in 0 until 27) UiDraw.slot(g, invX + (i % 9) * Layout.CELL, invY + (i / 9) * Layout.CELL)
         for (i in 0 until 9) UiDraw.slot(g, invX + i * Layout.CELL, invY + 3 * Layout.CELL + 4)
-    }
-
-    private fun renderActionPanel(g: GuiGraphics) {
-        UiDraw.panelAction(g, layout.enterPanel)
     }
 
     private fun renderConfigPanel(g: GuiGraphics) {

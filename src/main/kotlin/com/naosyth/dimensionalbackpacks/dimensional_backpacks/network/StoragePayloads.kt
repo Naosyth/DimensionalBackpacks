@@ -91,6 +91,7 @@ data class StorageEnterPayload(val containerId: Int, val held: Boolean) : Custom
     }
 }
 
+/** Client to server: deposit the main inventory, optionally only items already in the selected group. */
 data class StorageDepositPayload(val containerId: Int, val matchingOnly: Boolean) : CustomPacketPayload {
     override fun type(): CustomPacketPayload.Type<StorageDepositPayload> = TYPE
 

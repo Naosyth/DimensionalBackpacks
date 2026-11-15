@@ -10,7 +10,7 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent
 
 object ModNetwork {
     fun register(event: RegisterPayloadHandlersEvent) {
-        val registrar = event.registrar("5")
+        val registrar = event.registrar("6")
         registrar.playToServer(ExitPayload.TYPE, ExitPayload.CODEC) { _, context ->
             context.enqueueWork {
                 val player = context.player() as? ServerPlayer ?: return@enqueueWork

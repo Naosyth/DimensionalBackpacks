@@ -343,16 +343,20 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
     }
 
     override fun clickMenuButton(player: Player, id: Int): Boolean {
-        if (id != BUTTON_CLEAR_GRID) return false
+        if (id != BUTTON_CLEAR_GRID && id != BUTTON_CLEAR_GRID_TO_INVENTORY) return false
         if (player !is ServerPlayer) return true
-        val storages = storages() ?: return false
+        val storages = if (id == BUTTON_CLEAR_GRID) storages() ?: return false else null
         updatingCraftSlots = true
         try {
             for (i in 0 until craftSlots.containerSize) {
-                val stack = craftSlots.removeItemNoUpdate(i)
+                val stack = craftSlots.getItem(i)
                 if (stack.isEmpty) continue
-                val remaining = insertIntoSelectedGroup(storages, stack)
-                if (!remaining.isEmpty) player.inventory.placeItemBackInInventory(remaining)
+                val remaining = if (storages != null) {
+                    insertIntoSelectedGroup(storages, stack.copy())
+                } else {
+                    stack.copy().also { moveItemStackTo(it, INVENTORY_START, INVENTORY_END, false) }
+                }
+                if (remaining.count != stack.count) craftSlots.setItem(i, remaining)
             }
         } finally {
             updatingCraftSlots = false
@@ -518,6 +522,7 @@ class StorageMenu(containerId: Int, private val inventory: Inventory, val plotId
 
         /** Menu button id: move the crafting grid's contents into storage. */
         const val BUTTON_CLEAR_GRID = 0
+        const val BUTTON_CLEAR_GRID_TO_INVENTORY = 1
 
         /** Opens the screen of a worn, held or placed backpack. */
         fun open(player: ServerPlayer, plot: Plot, anchor: GlobalPos?, hand: InteractionHand? = null) {

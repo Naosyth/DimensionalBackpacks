@@ -16,6 +16,7 @@ internal class Button(
     private val visible: () -> Boolean = { true },
     private val enabled: () -> Boolean = { true },
     private val progress: () -> Float = { 0f },
+    private val framed: Boolean = true,
     private val onRelease: () -> Unit = {},
     private val onClick: () -> Unit
 ) : View {
@@ -27,7 +28,7 @@ internal class Button(
             active() || area.contains(mx, my) -> UiDraw.ButtonVariant.HIGHLIGHTED
             else -> UiDraw.ButtonVariant.NORMAL
         }
-        UiDraw.button(g, area, variant)
+        if (framed) UiDraw.button(g, area, variant)
         if (variant == UiDraw.ButtonVariant.DISABLED) {
             RenderSystem.enableBlend()
             RenderSystem.defaultBlendFunc()
